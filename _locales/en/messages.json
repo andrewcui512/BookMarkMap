@@ -1,0 +1,184 @@
+{
+  "extName": {
+    "message": "Bookmark Tree",
+    "description": "Extension name"
+  },
+  "extDescription": {
+    "message": "Manage bookmarks in a tree structure with AI classification and broken link detection",
+    "description": "Extension description"
+  },
+  "searchPlaceholder": {
+    "message": "Search bookmarks...",
+    "description": "Search input placeholder"
+  },
+  "openMainPage": {
+    "message": "Open Full Page",
+    "description": "Open main page button"
+  },
+  "settings": {
+    "message": "Settings",
+    "description": "Settings button"
+  },
+  "newFolder": {
+    "message": "New Folder",
+    "description": "New folder button"
+  },
+  "rename": {
+    "message": "Rename",
+    "description": "Rename action"
+  },
+  "delete": {
+    "message": "Delete",
+    "description": "Delete action"
+  },
+  "move": {
+    "message": "Move to...",
+    "description": "Move action"
+  },
+  "openInNewTab": {
+    "message": "Open in New Tab",
+    "description": "Open bookmark in new tab"
+  },
+  "copyUrl": {
+    "message": "Copy URL",
+    "description": "Copy bookmark URL"
+  },
+  "aiClassify": {
+    "message": "AI Classify",
+    "description": "AI classification feature"
+  },
+  "checkLinks": {
+    "message": "Check Broken Links",
+    "description": "Check broken links feature"
+  },
+  "invalidFolder": {
+    "message": "Invalid Bookmarks",
+    "description": "Invalid bookmarks folder name"
+  },
+  "confirmDelete": {
+    "message": "Are you sure you want to delete?",
+    "description": "Delete confirmation prompt"
+  },
+  "confirmDeleteFolder": {
+    "message": "Are you sure you want to delete this folder and all its contents?",
+    "description": "Delete folder confirmation prompt"
+  },
+  "cancel": {
+    "message": "Cancel",
+    "description": "Cancel button"
+  },
+  "confirm": {
+    "message": "Confirm",
+    "description": "Confirm button"
+  },
+  "save": {
+    "message": "Save",
+    "description": "Save button"
+  },
+  "noBookmarks": {
+    "message": "No bookmarks",
+    "description": "No bookmarks message"
+  },
+  "noResults": {
+    "message": "No results found",
+    "description": "No search results message"
+  },
+  "loading": {
+    "message": "Loading...",
+    "description": "Loading message"
+  },
+  "checking": {
+    "message": "Checking...",
+    "description": "Checking message"
+  },
+  "checkComplete": {
+    "message": "Check complete",
+    "description": "Check complete message"
+  },
+  "invalidLinksFound": {
+    "message": "Found $COUNT$ broken links",
+    "description": "Broken links count",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
+  },
+  "noInvalidLinks": {
+    "message": "No broken links found",
+    "description": "No broken links message"
+  },
+  "possiblyBlocked": {
+    "message": "Possibly blocked by firewall",
+    "description": "Possibly blocked message"
+  },
+  "moveToInvalid": {
+    "message": "Move to Invalid folder",
+    "description": "Move to invalid folder action"
+  },
+  "settingsTitle": {
+    "message": "Settings",
+    "description": "Settings page title"
+  },
+  "apiSettings": {
+    "message": "API Settings",
+    "description": "API settings title"
+  },
+  "apiEndpoint": {
+    "message": "API Endpoint",
+    "description": "API endpoint input label"
+  },
+  "apiKey": {
+    "message": "API Key",
+    "description": "API key input label"
+  },
+  "apiEndpointPlaceholder": {
+    "message": "Enter API URL, e.g., https://api.example.com/v1/chat",
+    "description": "API endpoint placeholder"
+  },
+  "apiKeyPlaceholder": {
+    "message": "Enter your API key",
+    "description": "API key placeholder"
+  },
+  "firewallWhitelist": {
+    "message": "Firewall Whitelist",
+    "description": "Firewall whitelist title"
+  },
+  "firewallWhitelistDesc": {
+    "message": "These domains will not be marked as invalid (one domain per line)",
+    "description": "Firewall whitelist description"
+  },
+  "appearance": {
+    "message": "Appearance",
+    "description": "Appearance settings title"
+  },
+  "darkMode": {
+    "message": "Dark Mode",
+    "description": "Dark mode option"
+  },
+  "language": {
+    "message": "Language",
+    "description": "Language setting"
+  },
+  "settingsSaved": {
+    "message": "Settings saved",
+    "description": "Settings saved message"
+  },
+  "error": {
+    "message": "Error",
+    "description": "Error message"
+  },
+  "networkError": {
+    "message": "Network error, please try again",
+    "description": "Network error message"
+  },
+  "apiError": {
+    "message": "API request failed",
+    "description": "API error message"
+  },
+  "copied": {
+    "message": "Copied to clipboard",
+    "description": "Copy success message"
+  }
+}

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bookmark Tree</title>
+  <link rel="stylesheet" href="../styles/common.css">
+  <link rel="stylesheet" href="../styles/tree.css">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <!-- 头部工具栏 -->
+    <header class="popup-header">
+      <div class="search-box">
+        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <path d="M21 21l-4.35-4.35"></path>
+        </svg>
+        <input type="text" class="input" id="searchInput" data-i18n-placeholder="searchPlaceholder">
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-icon btn-ghost tooltip" id="btnCheckLinks" data-tooltip-i18n="checkLinks">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+          </svg>
+        </button>
+        <button class="btn btn-icon btn-ghost tooltip" id="btnAiClassify" data-tooltip-i18n="aiClassify">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2z"></path>
+            <circle cx="8" cy="14" r="2"></circle>
+            <circle cx="16" cy="14" r="2"></circle>
+          </svg>
+        </button>
+        <button class="btn btn-icon btn-ghost tooltip" id="btnSettings" data-tooltip-i18n="settings">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path>
+          </svg>
+        </button>
+        <button class="btn btn-icon btn-ghost tooltip" id="btnOpenMain" data-tooltip-i18n="openMainPage">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+            <polyline points="15 3 21 3 21 9"></polyline>
+            <line x1="10" y1="14" x2="21" y2="3"></line>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- 书签树容器 -->
+    <main class="popup-main">
+      <div id="bookmarkTree" class="bookmark-tree">
+        <!-- 书签树将在这里渲染 -->
+      </div>
+
+      <!-- 加载状态 -->
+      <div id="loadingState" class="loading-state" style="display: none;">
+        <div class="spinner"></div>
+        <span data-i18n="loading"></span>
+      </div>
+
+      <!-- 空状态 -->
+      <div id="emptyState" class="empty-state" style="display: none;">
+        <div class="empty-state-icon">📚</div>
+        <div class="empty-state-title" data-i18n="noBookmarks"></div>
+      </div>
+
+      <!-- 搜索无结果 -->
+      <div id="noResultsState" class="empty-state" style="display: none;">
+        <div class="empty-state-icon">🔍</div>
+        <div class="empty-state-title" data-i18n="noResults"></div>
+      </div>
+    </main>
+
+    <!-- 底部状态栏 -->
+    <footer class="popup-footer" id="statusBar" style="display: none;">
+      <span id="statusText"></span>
+    </footer>
+  </div>
+
+  <!-- 右键菜单 -->
+  <div id="contextMenu" class="context-menu" style="display: none;">
+    <div class="context-menu-item" data-action="open">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+        <polyline points="15 3 21 3 21 9"></polyline>
+        <line x1="10" y1="14" x2="21" y2="3"></line>
+      </svg>
+      <span data-i18n="openInNewTab"></span>
+    </div>
+    <div class="context-menu-item" data-action="copy">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+      </svg>
+      <span data-i18n="copyUrl"></span>
+    </div>
+    <div class="context-menu-divider"></div>
+    <div class="context-menu-item" data-action="rename">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+      </svg>
+      <span data-i18n="rename"></span>
+    </div>
+    <div class="context-menu-item" data-action="move">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M5 12h14M12 5l7 7-7 7"></path>
+      </svg>
+      <span data-i18n="move"></span>
+    </div>
+    <div class="context-menu-divider"></div>
+    <div class="context-menu-item danger" data-action="delete">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="3 6 5 6 21 6"></polyline>
+        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+      </svg>
+      <span data-i18n="delete"></span>
+    </div>
+  </div>
+
+  <!-- Toast 提示 -->
+  <div id="toast" class="toast" style="display: none;"></div>
+
+  <script src="../scripts/bookmark-manager.js"></script>
+  <script src="../scripts/tree-renderer.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
