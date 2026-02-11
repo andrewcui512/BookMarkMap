@@ -239,7 +239,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // AI 分类按钮
   document.getElementById('btnAiClassify').addEventListener('click', () => {
-    showToast('AI 分类功能开发中', 'warning');
+    chrome.tabs.create({ url: chrome.runtime.getURL('pages/ai/ai.html') });
   });
 
   // 设置按钮

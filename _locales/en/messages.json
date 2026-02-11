@@ -12,7 +12,7 @@
     "description": "Search input placeholder"
   },
   "openMainPage": {
-    "message": "Open Full Page",
+    "message": "Open Page",
     "description": "Open main page button"
   },
   "settings": {
@@ -134,7 +134,7 @@
     "description": "API key input label"
   },
   "apiEndpointPlaceholder": {
-    "message": "Enter API URL, e.g., https://api.example.com/v1/chat",
+    "message": "Enter an OpenAI-compatible URL (with /chat/completions), e.g., https://api.deepseek.com/v1/chat/completions",
     "description": "API endpoint placeholder"
   },
   "apiKeyPlaceholder": {

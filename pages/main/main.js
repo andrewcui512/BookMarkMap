@@ -527,38 +527,6 @@ async function moveSelectedInvalid() {
   }
 }
 
-async function aiClassify() {
-  try {
-    showToast('AI 分类中...', 'default', 1200);
-    const bookmarks = BookmarkManager.flatten(state.allBookmarks).slice(0, 60);
-    if (bookmarks.length === 0) {
-      showToast(getMessage('noBookmarks'), 'warning');
-      return;
-    }
-
-    const response = await new Promise((resolve, reject) => {
-      chrome.runtime.sendMessage({ type: 'AI_CLASSIFY', bookmarks }, (res) => {
-        if (chrome.runtime.lastError) {
-          reject(new Error(chrome.runtime.lastError.message));
-          return;
-        }
-        resolve(res);
-      });
-    });
-
-    if (!response || response.error) {
-      showToast(response?.error || getMessage('apiError'), 'error');
-      return;
-    }
-
-    console.log('AI classifications:', response);
-    showToast('AI 分类建议已生成（见控制台）', 'success');
-  } catch (error) {
-    console.error('AI classify failed:', error);
-    showToast(getMessage('apiError'), 'error');
-  }
-}
-
 document.addEventListener('DOMContentLoaded', async () => {
   initI18n();
 
@@ -678,7 +646,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.getElementById('btnCheckLinks').addEventListener('click', startLinkCheck);
   document.getElementById('confirmMoveInvalid').addEventListener('click', moveSelectedInvalid);
-  document.getElementById('btnAiClassify').addEventListener('click', aiClassify);
+  document.getElementById('btnAiClassify').addEventListener('click', () => {
+    chrome.tabs.create({ url: chrome.runtime.getURL('pages/ai/ai.html') });
+  });
 
   // Initial state
   setActiveView(state.currentView);

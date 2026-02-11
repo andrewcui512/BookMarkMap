@@ -12,7 +12,7 @@
     "description": "搜索框占位符"
   },
   "openMainPage": {
-    "message": "打开完整页面",
+    "message": "打开页面",
     "description": "打开主页面按钮"
   },
   "settings": {
@@ -134,7 +134,7 @@
     "description": "API密钥输入框标签"
   },
   "apiEndpointPlaceholder": {
-    "message": "输入 API 地址，如 https://api.example.com/v1/chat",
+    "message": "输入 OpenAI 兼容的地址（含 /chat/completions），如 https://api.deepseek.com/v1/chat/completions",
     "description": "API端点占位符"
   },
   "apiKeyPlaceholder": {

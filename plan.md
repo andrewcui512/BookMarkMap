@@ -1,334 +1,94 @@
-# 书签树浏览器插件 (Bookmark Tree Extension)
+# 书签树 (Bookmark Tree) — Chrome 扩展
 
-> 一个帮助用户以树状结构可视化和管理浏览器书签的 Chrome 扩展程序，支持自定义分类和 AI 智能分类功能。
+> Manifest V3。用树状结构管理书签：搜索、重命名/删除/移动、失效链接检测、AI 智能分类（多配置 + 用量统计）。
 
----
+## 当前状态（最后更新：2026-02-09）
 
-## 📋 项目概述
+### 已实现（可用）
+- **Popup（弹窗）**：树状展示、搜索、展开状态记忆、右键菜单（打开/复制链接/重命名/删除）、跳转设置页/完整页面
+- **主页面（全屏）**：全部/最近（近 7 天）/已失效视图、搜索、右键菜单（打开/复制/重命名/移动/删除）、新建文件夹、失效链接检测（批量 + 进度 + 可选移动到“已失效书签”文件夹）
+- **AI 智能分类页**：支持多 API 配置（Kimi / DeepSeek / GLM / 自定义）、一键切换当前配置、测试连接、token 用量统计、生成分类建议并可一键应用（创建文件夹 + 移动书签）
+- **设置页**：API 端点/Key/模型（会同步到“当前 AI 配置”）、测试连接、防火墙白名单、深色模式、语言
+- **后台 Service Worker**：默认设置初始化；AI 请求（OpenAI 兼容 Chat Completions）；token 用量统计写入配置；设置读写；书签变更事件监听（目前仅日志）
+- **国际化**：`zh_CN` / `en`（部分页面仍存在硬编码文案）
 
-### 核心功能
-1. **树状展示书签** - 以直观的树形结构展示所有浏览器书签
-2. **自定义分类** - 支持用户创建、重命名、移动书签文件夹
-3. **AI 智能分类** - 接入第三方 AI API（如 OpenAI、Claude 等）自动分类书签
-4. **搜索与过滤** - 快速搜索和筛选书签
-5. **批量操作** - 支持批量移动、删除书签
+### 已知限制 / 待改进
+- Popup 里“移动 / 检测失效链接”按钮目前仍是占位提示（核心能力在主页面）
+- AI 的“token 用量统计”依赖服务端返回 `usage` 字段；部分厂商/网关可能不返回或字段不同
+- AI 输出解析依赖模型按要求返回 JSON；如失败可尝试更换模型/降低温度/减少分类数量
+- `host_permissions` 目前为 `<all_urls>`（便于调试；若计划上架建议收敛到具体域名）
 
----
+## 快速开始（调试安装）
+1. 打开 Chrome → `chrome://extensions/`
+2. 打开“开发者模式”
+3. “加载已解压的扩展程序” → 选择本项目目录 `BookMark_Tree/`
+4. 点击扩展图标打开 Popup，或在 Popup 里点击“打开完整页面”
 
-## 🏗️ 项目结构
+## 目录结构（与仓库一致）
 
 ```
 BookMark_Tree/
-├── manifest.json              # Chrome 扩展配置文件
-├── plan.md                    # 项目计划文档
-├── README.md                  # 项目说明文档
-│
-├── popup/                     # 弹出窗口界面
-│   ├── popup.html             # 弹窗 HTML
-│   ├── popup.css              # 弹窗样式
-│   └── popup.js               # 弹窗逻辑
-│
-├── pages/                     # 独立页面
-│   ├── main/                  # 主界面（全屏书签管理）
+├── manifest.json
+├── plan.md
+├── ai_guide.md
+├── popup/
+│   ├── popup.html
+│   ├── popup.css
+│   └── popup.js
+├── pages/
+│   ├── ai/
+│   │   ├── ai.html
+│   │   ├── ai.css
+│   │   └── ai.js
+│   ├── main/
 │   │   ├── main.html
 │   │   ├── main.css
 │   │   └── main.js
-│   └── settings/              # 设置页面
+│   └── settings/
 │       ├── settings.html
 │       ├── settings.css
 │       └── settings.js
-│
-├── scripts/                   # 核心脚本
-│   ├── background.js          # 后台服务脚本
-│   ├── bookmark-manager.js    # 书签管理核心逻辑
-│   ├── tree-renderer.js       # 树状结构渲染器
-│   └── ai-classifier.js       # AI 分类模块
-│
-├── styles/                    # 公共样式
-│   ├── common.css             # 通用样式
-│   ├── tree.css               # 树形组件样式
-│   └── variables.css          # CSS 变量定义
-│
-├── components/                # UI 组件
-│   ├── tree-node.js           # 树节点组件
-│   ├── context-menu.js        # 右键菜单组件
-│   ├── modal.js               # 模态框组件
-│   └── toast.js               # 提示消息组件
-│
-├── utils/                     # 工具函数
-│   ├── storage.js             # 存储工具
-│   ├── api.js                 # API 请求工具
-│   └── helpers.js             # 通用辅助函数
-│
-├── icons/                     # 图标资源
+├── scripts/
+│   ├── background.js
+│   ├── bookmark-manager.js
+│   ├── link-checker.js
+│   └── tree-renderer.js
+├── styles/
+│   ├── variables.css
+│   ├── common.css
+│   └── tree.css
+├── icons/
 │   ├── icon16.png
 │   ├── icon48.png
 │   └── icon128.png
-│
-└── _locales/                  # 国际化
-    ├── en/
-    │   └── messages.json
-    └── zh_CN/
-        └── messages.json
+└── _locales/
+    ├── en/messages.json
+    └── zh_CN/messages.json
 ```
 
----
+## 核心模块（实现来源）
+- `scripts/bookmark-manager.js`：封装 `chrome.bookmarks`（CRUD + 本地搜索/flatten + “已失效书签”文件夹与批量移动）
+- `scripts/link-checker.js`：批量检测 URL（白名单 + HEAD/GET，`no-cors`）
+- `scripts/tree-renderer.js`：树渲染（展开状态保存在 `chrome.storage.local`）
+- `scripts/background.js`：Service Worker（消息路由、AI 请求、设置读写）
 
-## 📦 技术栈
+## AI 集成（OpenAI 兼容 Chat Completions）
+- 本项目 AI 请求使用“OpenAI 兼容”格式：`POST` + `Authorization: Bearer <API_KEY>` + `model/messages`
+- 支持多配置：保存在 `settings.aiConfigs`，当前使用项为 `settings.activeAiConfigId`
+- 具体配置方式与 Kimi / DeepSeek / GLM 的示例见：`ai_guide.md`
 
-| 类别 | 技术选型 |
-|------|----------|
-| 平台 | Chrome Extension Manifest V3 |
-| 语言 | JavaScript (ES6+) |
-| 样式 | CSS3 + CSS Variables |
-| 存储 | Chrome Storage API |
-| 书签 | Chrome Bookmarks API |
-| AI 接口 | OpenAI API / Claude API / 自定义 |
-
----
-
-## 🔧 核心模块设计
-
-### 1. manifest.json 配置
-
-```json
-{
-  "manifest_version": 3,
-  "name": "Bookmark Tree",
-  "version": "1.0.0",
-  "description": "以树状结构管理书签，支持 AI 智能分类",
-  "permissions": [
-    "bookmarks",
-    "storage",
-    "tabs"
-  ],
-  "host_permissions": [
-    "https://api.openai.com/*",
-    "https://api.anthropic.com/*"
-  ],
-  "action": {
-    "default_popup": "popup/popup.html",
-    "default_icon": {
-      "16": "icons/icon16.png",
-      "48": "icons/icon48.png",
-      "128": "icons/icon128.png"
-    }
-  },
-  "background": {
-    "service_worker": "scripts/background.js"
-  },
-  "icons": {
-    "16": "icons/icon16.png",
-    "48": "icons/icon48.png",
-    "128": "icons/icon128.png"
-  }
-}
-```
-
-### 2. 书签管理模块 (bookmark-manager.js)
-
-**核心功能：**
-- `getAllBookmarks()` - 获取所有书签
-- `createFolder(parentId, title)` - 创建文件夹
-- `moveBookmark(bookmarkId, targetFolderId)` - 移动书签
-- `renameFolder(folderId, newTitle)` - 重命名文件夹
-- `deleteBookmark(bookmarkId)` - 删除书签
-- `searchBookmarks(query)` - 搜索书签
-
-### 3. 树状渲染器 (tree-renderer.js)
-
-**核心功能：**
-- `renderTree(container, bookmarkTree)` - 渲染书签树
-- `expandNode(nodeId)` - 展开节点
-- `collapseNode(nodeId)` - 折叠节点
-- `toggleNode(nodeId)` - 切换节点状态
-- `highlightNode(nodeId)` - 高亮节点
-
-### 4. AI 分类模块 (ai-classifier.js)
-
-**核心功能：**
-- `setApiConfig(provider, apiKey)` - 设置 API 配置
-- `classifyBookmarks(bookmarks)` - 批量分类书签
-- `suggestCategory(bookmark)` - 为单个书签建议分类
-- `autoOrganize()` - 自动整理所有书签
-
-**支持的 AI 提供商：**
-- OpenAI (GPT-4 / GPT-3.5)
-- Anthropic Claude
-- 自定义 API 端点
-
----
-
-## 🎨 UI 设计规范
-
-### 配色方案
-
-```css
-:root {
-  /* 主色调 */
-  --primary-color: #4F46E5;
-  --primary-hover: #4338CA;
-  
-  /* 背景色 */
-  --bg-primary: #FFFFFF;
-  --bg-secondary: #F9FAFB;
-  --bg-tertiary: #F3F4F6;
-  
-  /* 文字色 */
-  --text-primary: #111827;
-  --text-secondary: #6B7280;
-  
-  /* 边框色 */
-  --border-color: #E5E7EB;
-  
-  /* 功能色 */
-  --success: #10B981;
-  --warning: #F59E0B;
-  --error: #EF4444;
-  
-  /* 暗色模式 */
-  --dark-bg-primary: #1F2937;
-  --dark-bg-secondary: #111827;
-  --dark-text-primary: #F9FAFB;
-}
-```
-
-### 树节点样式
-
-- 文件夹图标：📁 (展开) / 📂 (折叠)
-- 书签图标：使用网站 favicon 或默认 🔖
-- 缩进：每级 20px
-- 节点高度：36px
-- 悬浮效果：背景色变化 + 轻微阴影
-
----
-
-## 📝 开发计划
-
-### 第一阶段：基础框架 (预计 2 天)
-
-- [ ] 初始化项目结构
-- [ ] 编写 manifest.json
-- [ ] 创建基础 popup 界面
-- [ ] 实现书签读取功能
-- [ ] 基础树形结构展示
-
-### 第二阶段：核心功能 (预计 3 天)
-
-- [ ] 完善树状展示组件
-  - [ ] 展开/折叠动画
-  - [ ] 拖拽排序
-  - [ ] 右键菜单
-- [ ] 实现书签管理功能
-  - [ ] 创建文件夹
-  - [ ] 重命名
-  - [ ] 移动书签
-  - [ ] 删除书签
-- [ ] 搜索功能实现
-
-### 第三阶段：AI 分类 (预计 2 天)
-
-- [ ] AI API 接口封装
-- [ ] 设置页面 - API 配置
-- [ ] 分类逻辑实现
-  - [ ] 单个书签分类
-  - [ ] 批量分类
-  - [ ] 分类建议 UI
-- [ ] 分类结果预览与确认
-
-### 第四阶段：优化完善 (预计 2 天)
-
-- [ ] 深色模式支持
-- [ ] 国际化 (中/英文)
-- [ ] 性能优化
-- [ ] 错误处理完善
-- [ ] 用户引导
-
-### 第五阶段：测试发布 (预计 1 天)
-
-- [ ] 功能测试
-- [ ] 兼容性测试
-- [ ] 打包发布
-- [ ] 编写文档
-
----
-
-## 🔌 AI API 集成
-
-### OpenAI 集成示例
-
-```javascript
-async function classifyWithOpenAI(bookmarks, apiKey) {
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`
-    },
-    body: JSON.stringify({
-      model: 'gpt-4',
-      messages: [
-        {
-          role: 'system',
-          content: '你是一个书签分类助手。根据书签的标题和URL，为其建议合适的分类文件夹名称。'
-        },
-        {
-          role: 'user',
-          content: `请为以下书签建议分类：\n${JSON.stringify(bookmarks)}`
-        }
-      ]
-    })
-  });
-  
-  return response.json();
-}
-```
-
-### API 配置存储
-
-```javascript
-// 使用 Chrome Storage 安全存储 API 密钥
-async function saveApiConfig(provider, apiKey) {
-  await chrome.storage.sync.set({
-    aiConfig: {
-      provider,
-      apiKey: btoa(apiKey) // 简单编码存储
-    }
-  });
-}
-```
-
----
-
-## 🔐 权限说明
-
+## 权限说明（manifest）
 | 权限 | 用途 |
 |------|------|
-| `bookmarks` | 读取和管理浏览器书签 |
-| `storage` | 保存用户设置和 API 配置 |
-| `tabs` | 获取当前标签页信息（可选） |
-| `host_permissions` | 访问 AI API 服务 |
+| `bookmarks` | 读取与管理书签 |
+| `storage` | 保存设置（含 API Key） |
+| `tabs` | 打开新标签页等 |
+| `host_permissions` | 允许访问外部 API / 站点（当前为 `<all_urls>`） |
 
----
-
-## 📄 待确认事项
-
-> [!IMPORTANT]
-> 请确认以下事项：
-
-1. **目标浏览器** - 是否只支持 Chrome，还是也需要支持 Firefox/Edge？
-2. **AI 提供商优先级** - 优先集成哪个 AI 服务？(OpenAI / Claude / 其他)
-3. **语言支持** - 是否需要英文版本？
-4. **数据导出** - 是否需要书签导出/导入功能？
-
----
-
-## 🚀 下一步
-
-1. 确认上述待确认事项
-2. 开始第一阶段开发 - 搭建基础项目框架
-3. 创建必要的项目文件
-
----
-
-*最后更新: 2026-01-30*
+## Roadmap（下一步优先级）
+- [ ] AI：分类建议支持手动编辑/合并分类 + 应用前预检（目标文件夹是否已存在）
+- [ ] AI：提供“撤销/回滚”（记录移动前 parentId/index，支持一键恢复）
+- [ ] Popup：实现“移动到...”UI（可复用主页面的移动弹窗思路）
+- [ ] Popup：接入“失效链接检测”并支持“移动到已失效书签”
+- [ ] i18n：补齐主页面/设置页/弹窗的硬编码文案
+- [ ] 发布准备：收敛 `host_permissions`、完善隐私说明（API Key 存储）、兼容性与异常处理

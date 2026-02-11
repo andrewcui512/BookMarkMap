@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI 智能分类</title>
+  <link rel="stylesheet" href="../../styles/common.css">
+  <link rel="stylesheet" href="ai.css">
+</head>
+<body>
+  <div class="ai-container">
+    <header class="ai-header">
+      <div class="ai-header-title">
+        <h1>AI 智能分类</h1>
+        <p class="ai-subtitle">管理模型配置并对书签进行分类（支持 Kimi / DeepSeek / GLM / 自定义）</p>
+      </div>
+      <div class="ai-header-actions">
+        <button class="btn btn-secondary" id="btnOpenMain">打开主页面</button>
+        <button class="btn btn-ghost" id="btnOpenSettings">设置</button>
+      </div>
+    </header>
+
+    <main class="ai-main">
+      <!-- 配置区 -->
+      <section class="card" id="configCard">
+        <div class="card-header">
+          <h2>AI 配置</h2>
+          <div class="card-actions">
+            <button class="btn btn-secondary" id="btnAddConfig">添加配置</button>
+          </div>
+        </div>
+        <div class="card-body config-layout">
+          <div class="config-list" id="configList"></div>
+          <div class="config-detail" id="configDetail">
+            <div class="placeholder">
+              <div class="placeholder-title">请选择一个配置</div>
+              <div class="placeholder-desc">或点击“添加配置”创建新的 API 配置。</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 未配置引导 -->
+      <section class="card" id="guideCard" style="display: none;">
+        <div class="card-header">
+          <h2>配置指南</h2>
+          <div class="card-actions">
+            <button class="btn btn-ghost" id="btnReloadGuide">刷新</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="guide-note">
+            你还没有配置可用的 API Key。请按下方指南完成配置后，再开始分类。
+          </div>
+          <pre class="guide-content" id="guideContent"></pre>
+        </div>
+      </section>
+
+      <!-- 分类区 -->
+      <section class="card" id="classifyCard">
+        <div class="card-header">
+          <h2>开始分类</h2>
+          <div class="card-actions">
+            <button class="btn btn-ghost" id="btnRefreshFolders">刷新文件夹列表</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="current-config" id="currentConfigLine"></div>
+          <div class="warning-note" id="classifyWarning" style="display: none;"></div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="classifyLimit">每次分类数量</label>
+              <input class="input" id="classifyLimit" type="number" min="1" max="200" step="1" value="60">
+              <div class="form-hint">建议 30–80。数量越大越慢、越耗 token。</div>
+            </div>
+            <div class="form-group">
+              <label for="classifyParent">分类文件夹创建位置</label>
+              <select class="input" id="classifyParent"></select>
+              <div class="form-hint">分类文件夹会创建在该位置下。</div>
+            </div>
+          </div>
+
+          <div class="actions-row">
+            <button class="btn btn-primary" id="btnRunClassify">生成分类建议</button>
+            <button class="btn btn-secondary" id="btnApplyClassify" disabled>应用分类（移动书签）</button>
+          </div>
+
+          <div class="meta" id="classifyMeta" style="display: none;"></div>
+          <div class="results" id="classifyResults"></div>
+        </div>
+      </section>
+    </main>
+
+    <!-- 配置编辑弹窗 -->
+    <div class="modal" id="modalConfig" style="display: none;">
+      <div class="modal-backdrop"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="modalTitle">添加配置</h3>
+          <button class="btn btn-icon btn-ghost modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="configName">名称（可选）</label>
+            <input class="input" id="configName" type="text" placeholder="例如：DeepSeek-个人 / Kimi-公司">
+          </div>
+          <div class="form-group">
+            <label for="configProvider">服务提供商</label>
+            <select class="input" id="configProvider"></select>
+          </div>
+          <div class="form-group">
+            <label for="configEndpoint">API 端点（必须包含 /chat/completions）</label>
+            <input class="input" id="configEndpoint" type="url" placeholder="https://api.deepseek.com/v1/chat/completions">
+          </div>
+          <div class="form-group">
+            <label for="configModel">模型名称</label>
+            <input class="input" id="configModel" type="text" placeholder="deepseek-chat">
+          </div>
+          <div class="form-group">
+            <label for="configKey">API Key</label>
+            <div class="input-with-action">
+              <input class="input" id="configKey" type="password" placeholder="sk-...">
+              <button type="button" class="btn btn-ghost btn-icon" id="toggleConfigKey" title="显示/隐藏">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </button>
+            </div>
+            <div class="form-hint">Key 会保存在 `chrome.storage.sync`，将随你的 Chrome 账号同步。</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary modal-cancel">取消</button>
+          <button class="btn btn-primary" id="btnSaveConfig">保存</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="toast" style="display: none;"></div>
+  </div>
+
+  <script src="../../scripts/bookmark-manager.js"></script>
+  <script src="ai.js"></script>
+</body>
+</html>

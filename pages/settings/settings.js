@@ -34,10 +34,17 @@ async function loadSettings() {
     const result = await chrome.storage.sync.get(['settings']);
     const settings = result.settings || {};
 
-    // API 设置
-    document.getElementById('apiEndpoint').value = settings.apiEndpoint || '';
-    document.getElementById('apiKey').value = settings.apiKey || '';
-    document.getElementById('apiModel').value = settings.model || '';
+    // API 设置（优先展示当前激活的多配置；兼容旧字段）
+    let active = null;
+    if (Array.isArray(settings.aiConfigs) && settings.activeAiConfigId) {
+      active = settings.aiConfigs.find(c => c.id === settings.activeAiConfigId) || null;
+    }
+    const endpoint = active?.apiEndpoint ?? settings.apiEndpoint ?? '';
+    const apiKey = active?.apiKey ?? settings.apiKey ?? '';
+    const model = active?.model ?? settings.model ?? '';
+    document.getElementById('apiEndpoint').value = endpoint;
+    document.getElementById('apiKey').value = apiKey;
+    document.getElementById('apiModel').value = model;
 
     // 防火墙白名单
     const whitelist = settings.firewallWhitelist || [];
@@ -68,6 +75,7 @@ async function loadSettings() {
 // 保存设置
 async function saveSettings() {
   try {
+    const now = Date.now();
     const settings = {
       apiEndpoint: document.getElementById('apiEndpoint').value.trim(),
       apiKey: document.getElementById('apiKey').value.trim(),
@@ -79,6 +87,59 @@ async function saveSettings() {
       darkMode: document.querySelector('input[name="darkMode"]:checked').value,
       language: document.querySelector('input[name="language"]:checked').value
     };
+
+    // 多配置：如果存在 active config，则同步更新；否则从当前输入创建默认 config
+    const existing = (await chrome.storage.sync.get(['settings'])).settings || {};
+    const aiConfigs = Array.isArray(existing.aiConfigs) ? existing.aiConfigs.slice() : [];
+    let activeId = typeof existing.activeAiConfigId === 'string' ? existing.activeAiConfigId : '';
+
+    function newId() {
+      return `cfg_${Math.random().toString(16).slice(2)}_${Date.now().toString(16)}`;
+    }
+
+    if (aiConfigs.length === 0 && (settings.apiEndpoint || settings.apiKey || settings.model)) {
+      const id = newId();
+      aiConfigs.push({
+        id,
+        name: '默认配置',
+        provider: 'custom',
+        apiEndpoint: settings.apiEndpoint,
+        apiKey: settings.apiKey,
+        model: settings.model,
+        createdAt: now,
+        updatedAt: now,
+        stats: {
+          calls: 0,
+          promptTokens: 0,
+          completionTokens: 0,
+          totalTokens: 0,
+          history: []
+        }
+      });
+      activeId = id;
+    }
+
+    if (aiConfigs.length > 0) {
+      if (!activeId) activeId = aiConfigs[0].id;
+      const idx = aiConfigs.findIndex(c => c.id === activeId);
+      if (idx >= 0) {
+        aiConfigs[idx] = {
+          ...aiConfigs[idx],
+          apiEndpoint: settings.apiEndpoint,
+          apiKey: settings.apiKey,
+          model: settings.model,
+          updatedAt: now
+        };
+      } else {
+        activeId = aiConfigs[0].id;
+      }
+
+      settings.aiConfigs = aiConfigs;
+      settings.activeAiConfigId = activeId;
+    } else {
+      settings.aiConfigs = [];
+      settings.activeAiConfigId = '';
+    }
 
     await chrome.storage.sync.set({ settings });
 
