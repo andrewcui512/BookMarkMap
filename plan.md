@@ -19,44 +19,38 @@
 - `host_permissions` 目前为 `<all_urls>`（便于调试；若计划上架建议收敛到具体域名）
 
 ## 快速开始（调试安装）
-1. 打开 Chrome → `chrome://extensions/`
-2. 打开“开发者模式”
-3. “加载已解压的扩展程序” → 选择本项目目录 `BookMark_Tree/`
-4. 点击扩展图标打开 Popup，或在 Popup 里点击“打开完整页面”
+> ⚠️ 本项目使用 Vite + `@crxjs/vite-plugin`（React/TS）。**不能直接把仓库根目录当作扩展加载**，否则会出现 Popup 一直停在“正在初始化 / JavaScript 加载失败”的情况（因为 manifest 指向的是 TS/TSX 源码，Chrome 无法直接解析）。
+
+### 开发模式（推荐）
+1. 安装依赖：`npm install`
+2. 启动开发构建：`npm run dev`（保持运行）
+3. 打开 Chrome → `chrome://extensions/` → 打开“开发者模式”
+4. “加载已解压的扩展程序” → 选择 **`dist/`** 目录
+5. 点击扩展图标打开 Popup（修改代码后一般会自动刷新；不刷新时手动点“重新加载扩展”）
+
+### 生产构建（打包/发布）
+1. 构建：`npm run build`
+2. 在 `chrome://extensions/` 里加载 **`dist/`** 目录（或将 `dist/` 打包发布）
 
 ## 目录结构（与仓库一致）
 
 ```
 BookMark_Tree/
-├── manifest.json
+├── manifest.json              # 源 manifest（给 Vite/CRXJS 用）
+├── vite.config.ts
+├── popup.html                 # Popup 入口（Vite HTML entry）
+├── bookmark-tree.html         # 主页面入口（Vite HTML entry）
+├── mindmap.html               # 思维导图入口（Vite HTML entry）
+├── ai.html                    # AI 分类入口（Vite HTML entry）
+├── settings.html              # 设置入口（Vite HTML entry）
 ├── plan.md
 ├── ai_guide.md
-├── popup/
-│   ├── popup.html
-│   ├── popup.css
-│   └── popup.js
-├── pages/
-│   ├── ai/
-│   │   ├── ai.html
-│   │   ├── ai.css
-│   │   └── ai.js
-│   ├── main/
-│   │   ├── main.html
-│   │   ├── main.css
-│   │   └── main.js
-│   └── settings/
-│       ├── settings.html
-│       ├── settings.css
-│       └── settings.js
-├── scripts/
-│   ├── background.js
-│   ├── bookmark-manager.js
-│   ├── link-checker.js
-│   └── tree-renderer.js
-├── styles/
-│   ├── variables.css
-│   ├── common.css
-│   └── tree.css
+├── src/
+│   ├── background/            # MV3 service worker（TS）
+│   ├── pages/                 # React 页面（popup/main/settings/ai/mindmap）
+│   ├── lib/                   # 书签/AI/链接检测等核心逻辑（TS）
+│   └── styles/                # 通用样式（TS/React 版本）
+├── dist/                      # 构建产物（Chrome 实际加载这个目录）
 ├── icons/
 │   ├── icon16.png
 │   ├── icon48.png
@@ -67,10 +61,12 @@ BookMark_Tree/
 ```
 
 ## 核心模块（实现来源）
-- `scripts/bookmark-manager.js`：封装 `chrome.bookmarks`（CRUD + 本地搜索/flatten + “已失效书签”文件夹与批量移动）
-- `scripts/link-checker.js`：批量检测 URL（白名单 + HEAD/GET，`no-cors`）
-- `scripts/tree-renderer.js`：树渲染（展开状态保存在 `chrome.storage.local`）
-- `scripts/background.js`：Service Worker（消息路由、AI 请求、设置读写）
+- `src/lib/bookmark-manager.ts`：封装 `chrome.bookmarks`（CRUD + 本地搜索/flatten + “已失效书签”文件夹与批量移动）
+- `src/lib/link-checker.ts`：批量检测 URL（白名单 + HEAD/GET）
+- `src/components/TreeView.tsx`：树渲染（展开状态保存在 `chrome.storage.local`）
+- `src/background/index.ts`：MV3 Service Worker（消息路由、AI 请求、设置读写、用量统计）
+
+> 备注：仓库内仍保留部分旧版（非 Vite/React）目录：`popup/`、`pages/`、`scripts/`、`styles/`（当前构建链路以 `src/` 为准，可后续再统一清理）。
 
 ## AI 集成（OpenAI 兼容 Chat Completions）
 - 本项目 AI 请求使用“OpenAI 兼容”格式：`POST` + `Authorization: Bearer <API_KEY>` + `model/messages`

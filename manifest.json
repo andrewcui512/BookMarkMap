@@ -14,7 +14,7 @@
     "<all_urls>"
   ],
   "action": {
-    "default_popup": "src/pages/popup/index.html",
+    "default_popup": "popup.html",
     "default_icon": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png",
@@ -22,7 +22,8 @@
     }
   },
   "background": {
-    "service_worker": "src/background/index.ts"
+    "service_worker": "src/background/index.ts",
+    "type": "module"
   },
   "icons": {
     "16": "icons/icon16.png",

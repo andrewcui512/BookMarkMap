@@ -89,7 +89,7 @@ export default function App() {
                     <button
                         className="popup-icon-btn"
                         title={t('settings') || '设置'}
-                        onClick={() => chrome.tabs.create({ url: chrome.runtime.getURL('src/pages/settings/index.html') })}
+                        onClick={() => chrome.tabs.create({ url: chrome.runtime.getURL('settings.html') })}
                     >
                         ⚙️
                     </button>
@@ -158,17 +158,17 @@ export default function App() {
             {/* Footer buttons */}
             <div className="popup-footer">
                 <button className="btn btn-sm"
-                    onClick={() => chrome.tabs.create({ url: chrome.runtime.getURL('src/pages/main/index.html') })}
+                    onClick={() => chrome.tabs.create({ url: chrome.runtime.getURL('bookmark-tree.html') })}
                 >
                     📋 {t('openFullPage') || '完整页面'}
                 </button>
                 <button className="btn btn-sm"
-                    onClick={() => chrome.tabs.create({ url: chrome.runtime.getURL('src/pages/mindmap/index.html') })}
+                    onClick={() => chrome.tabs.create({ url: chrome.runtime.getURL('mindmap.html') })}
                 >
                     🗺️ {t('mindMap') || '思维导图'}
                 </button>
                 <button className="btn btn-sm"
-                    onClick={() => chrome.tabs.create({ url: chrome.runtime.getURL('src/pages/ai/index.html') })}
+                    onClick={() => chrome.tabs.create({ url: chrome.runtime.getURL('ai.html') })}
                 >
                     🤖 AI
                 </button>

@@ -1,6 +1,6 @@
 {
   "../../../../@crx/manifest": {
-    "file": "assets/crx-manifest.js-Tp6YwdJf.js",
+    "file": "assets/crx-manifest.js-Bo1Pe3TH.js",
     "name": "crx-manifest.js",
     "src": "../../../../@crx/manifest",
     "isEntry": true
@@ -70,20 +70,10 @@
     "file": "assets/utils-BE-Z_0xs.js",
     "name": "utils"
   },
-  "src/background/index.ts": {
-    "file": "assets/index.ts-DDfCzDmO.js",
-    "name": "index.ts",
-    "src": "src/background/index.ts",
-    "isEntry": true,
-    "imports": [
-      "_ai-config-D5-EUCGD.js",
-      "_utils-BE-Z_0xs.js"
-    ]
-  },
-  "src/pages/ai/index.html": {
+  "ai.html": {
     "file": "assets/ai-BKSAKVrO.js",
     "name": "ai",
-    "src": "src/pages/ai/index.html",
+    "src": "ai.html",
     "isEntry": true,
     "imports": [
       "_common-CjGTj4NI.js",
@@ -97,10 +87,10 @@
       "assets/ai-cVf-98d7.css"
     ]
   },
-  "src/pages/main/index.html": {
-    "file": "assets/main-CJj6RyV2.js",
+  "bookmark-tree.html": {
+    "file": "assets/main-DM7cx8Jo.js",
     "name": "main",
-    "src": "src/pages/main/index.html",
+    "src": "bookmark-tree.html",
     "isEntry": true,
     "imports": [
       "_common-CjGTj4NI.js",
@@ -110,13 +100,13 @@
       "_utils-BE-Z_0xs.js"
     ],
     "css": [
-      "assets/main-CrKFG6ID.css"
+      "assets/main-BODdMvvI.css"
     ]
   },
-  "src/pages/mindmap/index.html": {
+  "mindmap.html": {
     "file": "assets/mindmap-BwIRLhmH.js",
     "name": "mindmap",
-    "src": "src/pages/mindmap/index.html",
+    "src": "mindmap.html",
     "isEntry": true,
     "imports": [
       "_common-CjGTj4NI.js",
@@ -126,10 +116,10 @@
       "assets/mindmap-CDKu9SAF.css"
     ]
   },
-  "src/pages/popup/index.html": {
-    "file": "assets/popup-B1NEkJnu.js",
+  "popup.html": {
+    "file": "assets/popup-Cui88ZBN.js",
     "name": "popup",
-    "src": "src/pages/popup/index.html",
+    "src": "popup.html",
     "isEntry": true,
     "imports": [
       "_common-CjGTj4NI.js",
@@ -140,10 +130,10 @@
       "assets/popup-CghGMEDp.css"
     ]
   },
-  "src/pages/settings/index.html": {
+  "settings.html": {
     "file": "assets/settings-BE6moNIB.js",
     "name": "settings",
-    "src": "src/pages/settings/index.html",
+    "src": "settings.html",
     "isEntry": true,
     "imports": [
       "_common-CjGTj4NI.js",
@@ -153,6 +143,16 @@
     ],
     "css": [
       "assets/settings-CeKSZddh.css"
+    ]
+  },
+  "src/background/index.ts": {
+    "file": "assets/index.ts-DDfCzDmO.js",
+    "name": "index.ts",
+    "src": "src/background/index.ts",
+    "isEntry": true,
+    "imports": [
+      "_ai-config-D5-EUCGD.js",
+      "_utils-BE-Z_0xs.js"
     ]
   }
 }

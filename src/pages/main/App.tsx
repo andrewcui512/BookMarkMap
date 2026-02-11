@@ -1,9 +1,9 @@
 /**
  * Main Page App — full-page bookmark manager
- * React migration of pages/main/main.js
+ * Features: tree view with one-click expand/collapse all, search, context menu
  */
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { TreeView, useExpandedState } from '@/components/TreeView';
 import { ContextMenu, useContextMenu } from '@/components/ContextMenu';
 import { ToastContainer, useToast } from '@/components/Toast';
@@ -16,7 +16,7 @@ import type { ContextMenuTarget } from '@/components/ContextMenu';
 import type { BookmarkNode, LinkCheckResult } from '@/types/bookmark';
 import './main.css';
 
-type ViewType = 'all' | 'recent' | 'invalid';
+type ViewType = 'all' | 'recent';
 
 export default function App() {
     const { t } = useI18n();
@@ -36,10 +36,49 @@ export default function App() {
     const [moveTargetFolder, setMoveTargetFolder] = useState('1');
     const [linkCheckOpen, setLinkCheckOpen] = useState(false);
     const [linkCheckResults, setLinkCheckResults] = useState<LinkCheckResult[]>([]);
-    const [linkCheckProgress, setLinkCheckProgress] = useState({ checked: 0, total: 0 });
     const [linkChecking, setLinkChecking] = useState(false);
 
     useEffect(() => { load(); }, [load]);
+
+    // Collect all folder IDs for expand/collapse all
+    const allFolderIds = useMemo(() => {
+        const ids: string[] = [];
+        function traverse(nodes: any[]) {
+            nodes.forEach(n => {
+                if (!n.url && n.children) {
+                    ids.push(n.id);
+                    traverse(n.children);
+                }
+            });
+        }
+        traverse(bookmarks as any[]);
+        return ids;
+    }, [bookmarks]);
+
+    const allExpanded = allFolderIds.length > 0 && allFolderIds.every(id => expanded.has(id));
+
+    // One-click expand all
+    const expandAll = useCallback(() => {
+        allFolderIds.forEach(id => {
+            if (!expanded.has(id)) onToggle(id, true);
+        });
+    }, [allFolderIds, expanded, onToggle]);
+
+    // One-click collapse all
+    const collapseAll = useCallback(() => {
+        allFolderIds.forEach(id => {
+            if (expanded.has(id)) onToggle(id, false);
+        });
+    }, [allFolderIds, expanded, onToggle]);
+
+    // Toggle: if any collapsed → expand all; if all expanded → collapse all
+    const toggleExpandAll = useCallback(() => {
+        if (allExpanded) {
+            collapseAll();
+        } else {
+            expandAll();
+        }
+    }, [allExpanded, expandAll, collapseAll]);
 
     // Update display based on view and search
     useEffect(() => {
@@ -126,8 +165,6 @@ export default function App() {
         setLinkChecking(true);
         setLinkCheckResults([]);
         const allBookmarks = flatten(bookmarks as unknown as BookmarkNode[]);
-        const total = allBookmarks.length;
-        setLinkCheckProgress({ checked: 0, total });
 
         try {
             const resp = await callBackground<{ results: LinkCheckResult[] }>({
@@ -146,10 +183,12 @@ export default function App() {
         r => r.status === 'invalid' || r.status === 'timeout' || r.status === 'client_error' || r.status === 'server_error'
     );
 
+    const bookmarkCount = flatten(bookmarks as unknown as BookmarkNode[]).length;
+    const folderCount = allFolderIds.length;
+
     const viewTitle =
         view === 'all' ? (t('allBookmarks') || '全部书签') :
-            view === 'recent' ? (t('recent') || '最近') :
-                (t('invalid') || '失效链接');
+            (t('recent') || '最近');
 
     return (
         <div className="main-container">
@@ -175,22 +214,48 @@ export default function App() {
                 </nav>
                 <div className="sidebar-divider" />
                 <nav className="sidebar-nav">
-                    <button className="sidebar-item" onClick={() => chrome.tabs.create({ url: chrome.runtime.getURL('src/pages/mindmap/index.html') })}>
+                    <button className="sidebar-item" onClick={() => chrome.tabs.create({ url: chrome.runtime.getURL('mindmap.html') })}>
                         🗺️ {t('mindMap') || '思维导图'}
                     </button>
-                    <button className="sidebar-item" onClick={() => chrome.tabs.create({ url: chrome.runtime.getURL('src/pages/ai/index.html') })}>
+                    <button className="sidebar-item" onClick={() => chrome.tabs.create({ url: chrome.runtime.getURL('ai.html') })}>
                         🤖 AI {t('classify') || '分类'}
                     </button>
-                    <button className="sidebar-item" onClick={() => chrome.tabs.create({ url: chrome.runtime.getURL('src/pages/settings/index.html') })}>
+                    <button className="sidebar-item" onClick={() => chrome.tabs.create({ url: chrome.runtime.getURL('settings.html') })}>
                         ⚙️ {t('settings') || '设置'}
                     </button>
                 </nav>
+                <div className="sidebar-stats">
+                    <span>📁 {folderCount} 个文件夹</span>
+                    <span>🔖 {bookmarkCount} 个书签</span>
+                </div>
             </aside>
 
             {/* Main area */}
             <main className="main-area">
                 <header className="main-header">
                     <h2 className="main-view-title">{viewTitle}</h2>
+
+                    {/* Tree controls */}
+                    <div className="tree-controls">
+                        <button
+                            className={`tree-toggle-btn ${allExpanded ? 'expanded' : ''}`}
+                            onClick={toggleExpandAll}
+                            title={allExpanded ? '收起全部节点' : '展开全部节点'}
+                        >
+                            {allExpanded ? (
+                                <><span className="tree-toggle-icon">⊟</span> 收起全部</>
+                            ) : (
+                                <><span className="tree-toggle-icon">⊞</span> 展开全部</>
+                            )}
+                        </button>
+                        <button className="tree-toggle-btn" onClick={expandAll} title="展开全部节点">
+                            <span className="tree-toggle-icon">📂</span> 全部展开
+                        </button>
+                        <button className="tree-toggle-btn" onClick={collapseAll} title="收起全部节点">
+                            <span className="tree-toggle-icon">📁</span> 全部收起
+                        </button>
+                    </div>
+
                     <div className="main-search">
                         <input
                             type="text"

@@ -14,14 +14,20 @@ export default defineConfig({
             '@': resolve(__dirname, 'src'),
         },
     },
+    base: './',
     build: {
         rollupOptions: {
             input: {
-                popup: resolve(__dirname, 'src/pages/popup/index.html'),
-                main: resolve(__dirname, 'src/pages/main/index.html'),
-                mindmap: resolve(__dirname, 'src/pages/mindmap/index.html'),
-                ai: resolve(__dirname, 'src/pages/ai/index.html'),
-                settings: resolve(__dirname, 'src/pages/settings/index.html'),
+                popup: resolve(__dirname, 'popup.html'),
+                main: resolve(__dirname, 'bookmark-tree.html'),
+                settings: resolve(__dirname, 'settings.html'),
+                ai: resolve(__dirname, 'ai.html'),
+                mindmap: resolve(__dirname, 'mindmap.html'),
+            },
+            output: {
+                chunkFileNames: 'assets/[name]-[hash].js',
+                entryFileNames: 'assets/[name]-[hash].js',
+                assetFileNames: 'assets/[name]-[hash].[ext]',
             },
         },
     },

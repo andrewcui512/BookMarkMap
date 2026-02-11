@@ -18,6 +18,7 @@
     "@crxjs/vite-plugin": "^2.0.0-beta.30",
     "@types/chrome": "^0.0.287",
     "@types/dagre": "^0.7.52",
+    "@types/node": "^25.2.3",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
     "@vitejs/plugin-react": "^4.3.4",
