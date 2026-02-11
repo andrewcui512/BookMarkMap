@@ -1,0 +1,61 @@
+.settings-container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 24px;
+}
+
+.settings-header h1 {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 24px;
+    color: var(--text-primary);
+}
+
+.settings-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 300px;
+}
+
+.settings-content {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.settings-section h2 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: var(--text-primary);
+}
+
+.settings-hint {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin: -8px 0 12px;
+}
+
+.settings-field {
+    margin-bottom: 14px;
+}
+
+.settings-field label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+}
+
+.settings-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.settings-shortcut {
+    font-size: 12px;
+    color: var(--text-tertiary);
+}

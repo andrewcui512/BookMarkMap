@@ -1,0 +1,184 @@
+{
+  "extName": {
+    "message": "书签树",
+    "description": "扩展名称"
+  },
+  "extDescription": {
+    "message": "以树状结构管理书签，支持 AI 智能分类和失效链接检测",
+    "description": "扩展描述"
+  },
+  "searchPlaceholder": {
+    "message": "搜索书签...",
+    "description": "搜索框占位符"
+  },
+  "openMainPage": {
+    "message": "打开页面",
+    "description": "打开主页面按钮"
+  },
+  "settings": {
+    "message": "设置",
+    "description": "设置按钮"
+  },
+  "newFolder": {
+    "message": "新建文件夹",
+    "description": "新建文件夹按钮"
+  },
+  "rename": {
+    "message": "重命名",
+    "description": "重命名操作"
+  },
+  "delete": {
+    "message": "删除",
+    "description": "删除操作"
+  },
+  "move": {
+    "message": "移动到...",
+    "description": "移动操作"
+  },
+  "openInNewTab": {
+    "message": "在新标签页打开",
+    "description": "在新标签页打开书签"
+  },
+  "copyUrl": {
+    "message": "复制链接",
+    "description": "复制书签链接"
+  },
+  "aiClassify": {
+    "message": "AI 智能分类",
+    "description": "AI分类功能"
+  },
+  "checkLinks": {
+    "message": "检测失效链接",
+    "description": "检测失效链接功能"
+  },
+  "invalidFolder": {
+    "message": "已失效书签",
+    "description": "失效书签文件夹名称"
+  },
+  "confirmDelete": {
+    "message": "确定要删除吗？",
+    "description": "删除确认提示"
+  },
+  "confirmDeleteFolder": {
+    "message": "确定要删除此文件夹及其所有内容吗？",
+    "description": "删除文件夹确认提示"
+  },
+  "cancel": {
+    "message": "取消",
+    "description": "取消按钮"
+  },
+  "confirm": {
+    "message": "确定",
+    "description": "确定按钮"
+  },
+  "save": {
+    "message": "保存",
+    "description": "保存按钮"
+  },
+  "noBookmarks": {
+    "message": "暂无书签",
+    "description": "无书签时的提示"
+  },
+  "noResults": {
+    "message": "未找到匹配结果",
+    "description": "搜索无结果时的提示"
+  },
+  "loading": {
+    "message": "加载中...",
+    "description": "加载提示"
+  },
+  "checking": {
+    "message": "正在检测...",
+    "description": "检测中提示"
+  },
+  "checkComplete": {
+    "message": "检测完成",
+    "description": "检测完成提示"
+  },
+  "invalidLinksFound": {
+    "message": "发现 $COUNT$ 个失效链接",
+    "description": "发现失效链接数量",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
+  },
+  "noInvalidLinks": {
+    "message": "未发现失效链接",
+    "description": "无失效链接提示"
+  },
+  "possiblyBlocked": {
+    "message": "可能被防火墙阻止",
+    "description": "可能被墙的提示"
+  },
+  "moveToInvalid": {
+    "message": "移动到已失效文件夹",
+    "description": "移动到失效文件夹操作"
+  },
+  "settingsTitle": {
+    "message": "设置",
+    "description": "设置页面标题"
+  },
+  "apiSettings": {
+    "message": "API 设置",
+    "description": "API设置标题"
+  },
+  "apiEndpoint": {
+    "message": "API 端点",
+    "description": "API端点输入框标签"
+  },
+  "apiKey": {
+    "message": "API 密钥",
+    "description": "API密钥输入框标签"
+  },
+  "apiEndpointPlaceholder": {
+    "message": "输入 OpenAI 兼容的地址（含 /chat/completions），如 https://api.deepseek.com/v1/chat/completions",
+    "description": "API端点占位符"
+  },
+  "apiKeyPlaceholder": {
+    "message": "输入你的 API 密钥",
+    "description": "API密钥占位符"
+  },
+  "firewallWhitelist": {
+    "message": "防火墙白名单",
+    "description": "防火墙白名单标题"
+  },
+  "firewallWhitelistDesc": {
+    "message": "以下域名不会被标记为失效（每行一个域名）",
+    "description": "防火墙白名单描述"
+  },
+  "appearance": {
+    "message": "外观",
+    "description": "外观设置标题"
+  },
+  "darkMode": {
+    "message": "深色模式",
+    "description": "深色模式选项"
+  },
+  "language": {
+    "message": "语言",
+    "description": "语言设置"
+  },
+  "settingsSaved": {
+    "message": "设置已保存",
+    "description": "设置保存成功提示"
+  },
+  "error": {
+    "message": "出错了",
+    "description": "错误提示"
+  },
+  "networkError": {
+    "message": "网络错误，请稍后重试",
+    "description": "网络错误提示"
+  },
+  "apiError": {
+    "message": "API 请求失败",
+    "description": "API错误提示"
+  },
+  "copied": {
+    "message": "已复制到剪贴板",
+    "description": "复制成功提示"
+  }
+}
