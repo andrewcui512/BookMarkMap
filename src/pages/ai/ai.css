@@ -107,6 +107,14 @@
     margin-bottom: 10px;
 }
 
+.classify-category-reason {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin: -2px 0 10px;
+    line-height: 1.4;
+    white-space: pre-wrap;
+}
+
 .classify-category-name {
     border: none;
     border-bottom: 2px solid var(--primary-color);
@@ -160,6 +168,58 @@
     white-space: nowrap;
 }
 
+/* Classify logs */
+.ai-log {
+    padding: 12px 14px;
+    margin: 0 0 14px;
+}
+
+.ai-log-summary {
+    cursor: pointer;
+    user-select: none;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.ai-log-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 10px 0;
+}
+
+.ai-log-pre {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 10px;
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--text-secondary);
+    max-height: 240px;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+/* Classify options */
+.ai-options {
+    padding: 12px 14px;
+    margin: 0 0 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.ai-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
 /* History */
 .history-item {
     padding: 12px;
@@ -167,4 +227,42 @@
     align-items: center;
     gap: 12px;
     justify-content: space-between;
+}
+
+/* Apply precheck */
+.apply-plan {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.apply-plan-summary {
+    margin-bottom: 6px;
+}
+
+.apply-plan-item {
+    padding: 12px;
+}
+
+.apply-plan-item-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.apply-plan-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+}
+
+.apply-plan-radio {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-secondary);
 }

@@ -41,6 +41,8 @@ export interface Settings {
     darkMode: 'auto' | 'light' | 'dark';
     language: string;
     firewallWhitelist: string[];
+    /** When enabled, fetch lightweight webpage meta for unclear titles (requires optional host permissions). */
+    aiFetchMeta?: boolean;
     aiConfigs: AiConfig[];
     activeAiConfigId: string | null;
     // Legacy fields (settings page compat)
@@ -64,12 +66,14 @@ export interface LinkCheckResult {
 // AI Classification types
 export interface ClassifyCategory {
     category: string;
+    reason?: string;
     bookmarks: { id: string; title: string; url: string }[];
 }
 
 export interface ClassifyResult {
     categories: ClassifyCategory[];
     skipped: number;
+    failed?: number;
     usage: { prompt_tokens: number; completion_tokens: number; total_tokens: number } | null;
 }
 
@@ -81,22 +85,38 @@ export interface MoveRecord {
     toParentId: string;
 }
 
+export interface PrunedFolderRecord {
+    id: string;
+    title: string;
+    parentId: string;
+    index: number;
+}
+
 export interface OperationRecord {
     id: string;
     timestamp: string;
     description: string;
     moves: MoveRecord[];
     foldersCreated: string[];
+    prunedFolders?: PrunedFolderRecord[];
 }
 
 // Message types for background communication
 export type MessageType =
     | 'CHECK_LINK'
     | 'CHECK_LINKS_BATCH'
+    | 'AI_CLASSIFY'
+    | 'AI_TEST'
+    | 'AI_CLASSIFY_ALL_BOOKMARKS'
+    | 'AI_PLAN_BOOKMARKS'
+    | 'AI_CLASSIFY_BOOKMARKS_BATCH'
     | 'CLASSIFY_BOOKMARKS'
     | 'TEST_AI_CONNECTION'
     | 'GET_SETTINGS'
-    | 'SAVE_SETTINGS';
+    | 'SAVE_SETTINGS'
+    | 'SAVE_OPERATION'
+    | 'GET_OPERATIONS'
+    | 'DELETE_OPERATION';
 
 export interface ExtMessage {
     type: MessageType;

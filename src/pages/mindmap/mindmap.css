@@ -121,6 +121,11 @@
     border-style: dashed;
 }
 
+.mindmap-node.drop-target {
+    border-color: var(--success);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15), var(--shadow-md);
+}
+
 .mindmap-node-icon {
     font-size: 14px;
     flex-shrink: 0;
@@ -172,6 +177,36 @@
     white-space: nowrap;
     z-index: 10;
     pointer-events: none;
+}
+
+/* React Flow controls */
+.mindmap-container .react-flow__controls {
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--bg-primary);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+}
+
+.mindmap-container .react-flow__controls-button {
+    width: 28px;
+    height: 28px;
+    border: 0;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+.mindmap-container .react-flow__controls-button:last-child {
+    border-bottom: 0;
+}
+
+.mindmap-container .react-flow__controls-button:hover {
+    background: var(--bg-tertiary);
+}
+
+.mindmap-container .react-flow__controls-button svg {
+    fill: var(--text-primary);
 }
 
 /* Override react flow background */

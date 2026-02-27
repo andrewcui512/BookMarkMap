@@ -27,6 +27,7 @@ export interface ContextMenuTarget {
     title: string;
     url?: string;
     isFolder: boolean;
+    childCount?: number;
 }
 
 export function useContextMenu(onAction: (action: string, target: ContextMenuTarget) => void) {
@@ -66,7 +67,9 @@ export function useContextMenu(onAction: (action: string, target: ContextMenuTar
     const handleAction = useCallback(
         (action: string) => {
             if (state.target) {
-                onAction(action, state.target);
+                Promise.resolve(onAction(action, state.target)).catch((err) => {
+                    console.error('Context menu action failed:', err);
+                });
             }
             hide();
         },

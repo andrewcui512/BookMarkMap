@@ -4,6 +4,7 @@
  */
 
 import type { BookmarkNode } from '@/types/bookmark';
+import { getMessage } from '@/lib/i18n';
 
 type ChromeBookmarkTreeNode = chrome.bookmarks.BookmarkTreeNode;
 
@@ -20,6 +21,12 @@ export async function getChildren(id: string): Promise<ChromeBookmarkTreeNode[]>
 /** Get a single node by ID */
 export async function getNode(id: string): Promise<ChromeBookmarkTreeNode> {
     const nodes = await chrome.bookmarks.get(id);
+    return nodes[0];
+}
+
+/** Get a subtree by node ID (includes the node itself and all descendants). */
+export async function getSubTree(id: string): Promise<ChromeBookmarkTreeNode> {
+    const nodes = await chrome.bookmarks.getSubTree(id);
     return nodes[0];
 }
 
@@ -121,7 +128,7 @@ export function flatten(bookmarks: BookmarkNode[]): BookmarkNode[] {
 
 /** Get or create the "已失效书签" (invalid bookmarks) folder */
 export async function getOrCreateInvalidFolder(): Promise<ChromeBookmarkTreeNode> {
-    const INVALID_FOLDER_NAME = chrome.i18n?.getMessage('invalidFolder') || '已失效书签';
+    const INVALID_FOLDER_NAME = getMessage('invalidFolder');
 
     const results = await searchApi(INVALID_FOLDER_NAME);
     const existing = results.find((r) => !r.url && r.title === INVALID_FOLDER_NAME);

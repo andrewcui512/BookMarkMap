@@ -2,7 +2,7 @@
  * React hook for bookmark operations
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import * as bm from '@/lib/bookmark-manager';
 import type { BookmarkNode } from '@/types/bookmark';
 
@@ -12,17 +12,22 @@ export function useBookmarks() {
     const [bookmarks, setBookmarks] = useState<ChromeNode[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const hasLoadedOnceRef = useRef(false);
 
-    const load = useCallback(async () => {
-        setLoading(true);
+    const load = useCallback(async (options?: { silent?: boolean }) => {
+        const silent = options?.silent ?? false;
+        const showLoading = !silent || !hasLoadedOnceRef.current;
+
+        if (showLoading) setLoading(true);
         setError(null);
         try {
             const tree = await bm.getAll();
             setBookmarks(tree);
+            hasLoadedOnceRef.current = true;
         } catch (err) {
             setError((err as Error).message);
         } finally {
-            setLoading(false);
+            if (showLoading) setLoading(false);
         }
     }, []);
 
@@ -37,7 +42,7 @@ export function useBookmarks() {
     const renameBookmark = useCallback(
         async (id: string, title: string) => {
             await bm.rename(id, title);
-            await load();
+            await load({ silent: true });
         },
         [load]
     );
@@ -45,7 +50,7 @@ export function useBookmarks() {
     const removeBookmark = useCallback(
         async (id: string) => {
             await bm.remove(id);
-            await load();
+            await load({ silent: true });
         },
         [load]
     );
@@ -53,7 +58,7 @@ export function useBookmarks() {
     const moveBookmark = useCallback(
         async (id: string, parentId: string, index?: number) => {
             await bm.move(id, parentId, index);
-            await load();
+            await load({ silent: true });
         },
         [load]
     );
@@ -61,7 +66,7 @@ export function useBookmarks() {
     const createNewFolder = useCallback(
         async (parentId: string, title: string) => {
             const node = await bm.createFolder(parentId, title);
-            await load();
+            await load({ silent: true });
             return node;
         },
         [load]

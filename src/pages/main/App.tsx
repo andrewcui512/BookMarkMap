@@ -10,16 +10,24 @@ import { ToastContainer, useToast } from '@/components/Toast';
 import { Modal } from '@/components/Modal';
 import { useBookmarks } from '@/hooks/useBookmarks';
 import { useI18n } from '@/hooks/useI18n';
-import { callBackground } from '@/lib/utils';
+import { useTheme } from '@/hooks/useTheme';
+import { checkLinks } from '@/lib/link-checker';
+import { ensureOriginsPermission, WEB_ACCESS_ORIGINS } from '@/lib/permissions';
 import * as bm from '@/lib/bookmark-manager';
 import type { ContextMenuTarget } from '@/components/ContextMenu';
 import type { BookmarkNode, LinkCheckResult } from '@/types/bookmark';
 import './main.css';
 
 type ViewType = 'all' | 'recent';
+const PROTECTED_NODE_IDS = new Set(['0', '1', '2', '3']);
+
+function isReadOnlyNodeId(id: string): boolean {
+    return PROTECTED_NODE_IDS.has(id) || id === 'recent-root';
+}
 
 export default function App() {
     const { t } = useI18n();
+    useTheme();
     const { bookmarks, loading, load, searchLocal, flatten, getRecentBookmarks, moveToInvalid } = useBookmarks();
     const { toasts, show: showToast } = useToast();
     const { expanded, toggle: onToggle } = useExpandedState('expandedNodesMain');
@@ -37,6 +45,7 @@ export default function App() {
     const [linkCheckOpen, setLinkCheckOpen] = useState(false);
     const [linkCheckResults, setLinkCheckResults] = useState<LinkCheckResult[]>([]);
     const [linkChecking, setLinkChecking] = useState(false);
+    const [linkCheckProgress, setLinkCheckProgress] = useState({ checked: 0, total: 0 });
 
     useEffect(() => { load(); }, [load]);
 
@@ -87,13 +96,19 @@ export default function App() {
             nodes = searchLocal(searchQuery);
         } else if (view === 'recent') {
             const recent = getRecentBookmarks(bookmarks as unknown as BookmarkNode[], 7);
-            nodes = [{ id: 'recent-root', title: t('recent') || '最近 7 天', children: recent }];
+            nodes = [{ id: 'recent-root', title: t('recentDays', '7'), children: recent }];
         }
         setDisplayNodes(nodes);
     }, [bookmarks, searchQuery, view, searchLocal, getRecentBookmarks, t]);
 
     // Context menu
     const handleContextAction = useCallback(async (action: string, target: ContextMenuTarget) => {
+        const isReadonly = isReadOnlyNodeId(target.id);
+        if (isReadonly && (action === 'rename' || action === 'move' || action === 'delete')) {
+            showToast(t('systemFolderReadonly') || '系统文件夹不可修改', 'warning');
+            return;
+        }
+
         switch (action) {
             case 'open':
                 if (target.url) chrome.tabs.create({ url: target.url });
@@ -101,14 +116,14 @@ export default function App() {
             case 'copy':
                 if (target.url) {
                     await navigator.clipboard.writeText(target.url);
-                    showToast(t('copied') || '已复制', 'success');
+                    showToast(t('copied'), 'success');
                 }
                 break;
             case 'rename': {
-                const newTitle = prompt(t('rename') || '重命名', target.title);
+                const newTitle = prompt(t('rename'), target.title);
                 if (newTitle && newTitle !== target.title) {
                     await bm.rename(target.id, newTitle);
-                    load();
+                    load({ silent: true });
                 }
                 break;
             }
@@ -117,10 +132,10 @@ export default function App() {
                 setMoveOpen(true);
                 break;
             case 'delete': {
-                const msg = target.isFolder ? (t('confirmDeleteFolder') || '删除此文件夹及所有内容？') : (t('confirmDelete') || '确认删除？');
+                const msg = target.isFolder ? t('confirmDeleteFolder') : t('confirmDelete');
                 if (confirm(msg)) {
                     await bm.remove(target.id);
-                    load();
+                    load({ silent: true });
                 }
                 break;
             }
@@ -129,15 +144,15 @@ export default function App() {
 
     const contextMenu = useContextMenu(handleContextAction);
     const menuItems = (target: ContextMenuTarget) => [
-        { action: 'open', label: t('open') || '打开', icon: '🔗', hidden: target.isFolder },
-        { action: 'copy', label: t('copyLink') || '复制链接', icon: '📋', hidden: target.isFolder },
-        { action: 'rename', label: t('rename') || '重命名', icon: '✏️' },
-        { action: 'move', label: t('moveTo') || '移动到...', icon: '📂' },
-        { action: 'delete', label: t('delete') || '删除', icon: '🗑️', danger: true },
+        { action: 'open', label: t('open'), icon: '🔗', hidden: target.isFolder },
+        { action: 'copy', label: t('copyLink'), icon: '📋', hidden: target.isFolder },
+        { action: 'rename', label: t('rename'), icon: '✏️', hidden: isReadOnlyNodeId(target.id) },
+        { action: 'move', label: t('moveTo'), icon: '📂', hidden: isReadOnlyNodeId(target.id) },
+        { action: 'delete', label: t('delete'), icon: '🗑️', danger: true, hidden: isReadOnlyNodeId(target.id) },
     ];
 
     // Folders for select
-    const folderOptions = collectFolders(bookmarks as unknown as BookmarkNode[]);
+    const folderOptions = collectFolders(bookmarks as unknown as BookmarkNode[], t);
 
     // New folder
     const handleCreateFolder = async () => {
@@ -145,33 +160,52 @@ export default function App() {
         await bm.createFolder(newFolderParent, newFolderName.trim());
         setNewFolderOpen(false);
         setNewFolderName('');
-        load();
-        showToast(t('folderCreated') || '文件夹已创建', 'success');
+        load({ silent: true });
+        showToast(t('folderCreated'), 'success');
     };
 
     // Move
     const handleMove = async () => {
         if (!moveTargetId) return;
+        if (isReadOnlyNodeId(moveTargetId)) {
+            showToast(t('systemFolderReadonly') || '系统文件夹不可修改', 'warning');
+            setMoveOpen(false);
+            setMoveTargetId(null);
+            return;
+        }
         await bm.move(moveTargetId, moveTargetFolder);
         setMoveOpen(false);
         setMoveTargetId(null);
-        load();
-        showToast(t('moved') || '已移动', 'success');
+        load({ silent: true });
+        showToast(t('moved'), 'success');
     };
 
     // Link check
     const handleLinkCheck = async () => {
+        const granted = await ensureOriginsPermission([...WEB_ACCESS_ORIGINS]);
+        if (!granted) {
+            showToast(t('webAccessRequired'), 'warning');
+            return;
+        }
+
         setLinkCheckOpen(true);
         setLinkChecking(true);
         setLinkCheckResults([]);
         const allBookmarks = flatten(bookmarks as unknown as BookmarkNode[]);
+        setLinkCheckProgress({ checked: 0, total: allBookmarks.length });
+
+        if (allBookmarks.length === 0) {
+            setLinkChecking(false);
+            showToast(t('noBookmarks'), 'info');
+            return;
+        }
 
         try {
-            const resp = await callBackground<{ results: LinkCheckResult[] }>({
-                type: 'CHECK_LINKS_BATCH',
-                bookmarks: allBookmarks.map((b: any) => ({ id: b.id, url: b.url, title: b.title })),
-            });
-            setLinkCheckResults(resp.results || []);
+            const results = await checkLinks(
+                allBookmarks.map((b: any) => ({ id: b.id, url: b.url, title: b.title })),
+                (checked, total) => setLinkCheckProgress({ checked, total })
+            );
+            setLinkCheckResults(results || []);
         } catch (err) {
             showToast((err as Error).message, 'error');
         } finally {
@@ -185,48 +219,49 @@ export default function App() {
 
     const bookmarkCount = flatten(bookmarks as unknown as BookmarkNode[]).length;
     const folderCount = allFolderIds.length;
+    const linkCheckPercent = linkCheckProgress.total > 0 ? Math.round((linkCheckProgress.checked / linkCheckProgress.total) * 100) : 0;
 
     const viewTitle =
-        view === 'all' ? (t('allBookmarks') || '全部书签') :
-            (t('recent') || '最近');
+        view === 'all' ? t('allBookmarks') :
+            t('recent');
 
     return (
         <div className="main-container">
             {/* Sidebar */}
             <aside className="main-sidebar">
-                <div className="sidebar-brand">📚 Bookmark Tree</div>
+                <div className="sidebar-brand">📚 BookMarkMap</div>
                 <nav className="sidebar-nav">
                     {(['all', 'recent'] as ViewType[]).map(v => (
                         <button key={v} className={`sidebar-item ${view === v ? 'active' : ''}`}
                             onClick={() => { setView(v); setSearchQuery(''); }}>
-                            {v === 'all' ? '📋' : '🕐'} {v === 'all' ? (t('allBookmarks') || '全部') : (t('recent') || '最近')}
+                            {v === 'all' ? '📋' : '🕐'} {v === 'all' ? t('allBookmarks') : t('recent')}
                         </button>
                     ))}
                 </nav>
                 <div className="sidebar-divider" />
                 <nav className="sidebar-nav">
                     <button className="sidebar-item" onClick={handleLinkCheck}>
-                        🔍 {t('checkLinks') || '检测失效链接'}
+                        🔍 {t('checkLinks')}
                     </button>
                     <button className="sidebar-item" onClick={() => setNewFolderOpen(true)}>
-                        ➕ {t('newFolder') || '新建文件夹'}
+                        ➕ {t('newFolder')}
                     </button>
                 </nav>
                 <div className="sidebar-divider" />
                 <nav className="sidebar-nav">
                     <button className="sidebar-item" onClick={() => chrome.tabs.create({ url: chrome.runtime.getURL('mindmap.html') })}>
-                        🗺️ {t('mindMap') || '思维导图'}
+                        🗺️ {t('openBookMarkMap')}
                     </button>
                     <button className="sidebar-item" onClick={() => chrome.tabs.create({ url: chrome.runtime.getURL('ai.html') })}>
-                        🤖 AI {t('classify') || '分类'}
+                        🤖 AI {t('classify')}
                     </button>
                     <button className="sidebar-item" onClick={() => chrome.tabs.create({ url: chrome.runtime.getURL('settings.html') })}>
-                        ⚙️ {t('settings') || '设置'}
+                        ⚙️ {t('settings')}
                     </button>
                 </nav>
                 <div className="sidebar-stats">
-                    <span>📁 {folderCount} 个文件夹</span>
-                    <span>🔖 {bookmarkCount} 个书签</span>
+                    <span>📁 {t('folderCount', String(folderCount))}</span>
+                    <span>🔖 {t('bookmarkCount', String(bookmarkCount))}</span>
                 </div>
             </aside>
 
@@ -240,26 +275,26 @@ export default function App() {
                         <button
                             className={`tree-toggle-btn ${allExpanded ? 'expanded' : ''}`}
                             onClick={toggleExpandAll}
-                            title={allExpanded ? '收起全部节点' : '展开全部节点'}
+                            title={allExpanded ? t('collapseAllNodes') : t('expandAllNodes')}
                         >
                             {allExpanded ? (
-                                <><span className="tree-toggle-icon">⊟</span> 收起全部</>
+                                <><span className="tree-toggle-icon">⊟</span> {t('collapseAll')}</>
                             ) : (
-                                <><span className="tree-toggle-icon">⊞</span> 展开全部</>
+                                <><span className="tree-toggle-icon">⊞</span> {t('expandAll')}</>
                             )}
                         </button>
-                        <button className="tree-toggle-btn" onClick={expandAll} title="展开全部节点">
-                            <span className="tree-toggle-icon">📂</span> 全部展开
+                        <button className="tree-toggle-btn" onClick={expandAll} title={t('expandAllNodes')}>
+                            <span className="tree-toggle-icon">📂</span> {t('expandAll')}
                         </button>
-                        <button className="tree-toggle-btn" onClick={collapseAll} title="收起全部节点">
-                            <span className="tree-toggle-icon">📁</span> 全部收起
+                        <button className="tree-toggle-btn" onClick={collapseAll} title={t('collapseAllNodes')}>
+                            <span className="tree-toggle-icon">📁</span> {t('collapseAll')}
                         </button>
                     </div>
 
                     <div className="main-search">
                         <input
                             type="text"
-                            placeholder={t('searchPlaceholder') || '搜索书签...'}
+                            placeholder={t('searchPlaceholder')}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
@@ -268,9 +303,9 @@ export default function App() {
 
                 <div className="main-content">
                     {loading ? (
-                        <div className="state-container"><div className="spinner" /><div className="state-text">{t('loading') || '加载中...'}</div></div>
+                        <div className="state-container"><div className="spinner" /><div className="state-text">{t('loading')}</div></div>
                     ) : displayNodes.length === 0 ? (
-                        <div className="state-container"><div className="state-icon">📭</div><div className="state-text">{searchQuery ? (t('noResults') || '无匹配结果') : (t('noBookmarks') || '暂无书签')}</div></div>
+                        <div className="state-container"><div className="state-icon">📭</div><div className="state-text">{searchQuery ? t('noResults') : t('noBookmarks')}</div></div>
                     ) : (
                         <TreeView
                             nodes={displayNodes as any}
@@ -288,29 +323,37 @@ export default function App() {
             </main>
 
             {/* Modals */}
-            <Modal open={newFolderOpen} onClose={() => setNewFolderOpen(false)} title={t('newFolder') || '新建文件夹'}
-                footer={<><button className="btn" onClick={() => setNewFolderOpen(false)}>{t('cancel') || '取消'}</button><button className="btn btn-primary" onClick={handleCreateFolder}>{t('create') || '创建'}</button></>}>
+            <Modal open={newFolderOpen} onClose={() => setNewFolderOpen(false)} title={t('newFolder')}
+                footer={<><button className="btn" onClick={() => setNewFolderOpen(false)}>{t('cancel')}</button><button className="btn btn-primary" onClick={handleCreateFolder}>{t('create')}</button></>}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    <input type="text" placeholder={t('folderName') || '文件夹名称'} value={newFolderName} onChange={(e) => setNewFolderName(e.target.value)} autoFocus />
+                    <input type="text" placeholder={t('folderName')} value={newFolderName} onChange={(e) => setNewFolderName(e.target.value)} autoFocus />
                     <select value={newFolderParent} onChange={(e) => setNewFolderParent(e.target.value)}>
                         {folderOptions.map(f => <option key={f.id} value={f.id}>{'　'.repeat(f.depth)}{f.title}</option>)}
                     </select>
                 </div>
             </Modal>
 
-            <Modal open={moveOpen} onClose={() => setMoveOpen(false)} title={t('moveTo') || '移动到...'}
-                footer={<><button className="btn" onClick={() => setMoveOpen(false)}>{t('cancel') || '取消'}</button><button className="btn btn-primary" onClick={handleMove}>{t('move') || '移动'}</button></>}>
+            <Modal open={moveOpen} onClose={() => setMoveOpen(false)} title={t('moveTo')}
+                footer={<><button className="btn" onClick={() => setMoveOpen(false)}>{t('cancel')}</button><button className="btn btn-primary" onClick={handleMove}>{t('move')}</button></>}>
                 <select value={moveTargetFolder} onChange={(e) => setMoveTargetFolder(e.target.value)} style={{ width: '100%' }}>
                     {folderOptions.map(f => <option key={f.id} value={f.id}>{'　'.repeat(f.depth)}{f.title}</option>)}
                 </select>
             </Modal>
 
-            <Modal open={linkCheckOpen} onClose={() => setLinkCheckOpen(false)} title={t('checkLinks') || '失效链接检测'} width="600px">
+            <Modal open={linkCheckOpen} onClose={() => setLinkCheckOpen(false)} title={t('checkLinks')} width="600px">
                 {linkChecking ? (
-                    <div className="state-container"><div className="spinner" /><div className="state-text">{t('checking') || '检测中...'}</div></div>
+                    <div className="link-check-progress">
+                        <div className="link-check-progress-meta">
+                            <span>{t('checking')}</span>
+                            <span>{linkCheckProgress.checked}/{linkCheckProgress.total} ({linkCheckPercent}%)</span>
+                        </div>
+                        <div className="progress-bar" role="progressbar" aria-valuenow={linkCheckPercent} aria-valuemin={0} aria-valuemax={100}>
+                            <div className="progress-bar-fill" style={{ width: `${linkCheckPercent}%` }} />
+                        </div>
+                    </div>
                 ) : (
                     <div>
-                        <p style={{ marginBottom: 12 }}>{t('found') || '发现'} {invalidResults.length} {t('invalidLinks') || '个失效链接'}</p>
+                        <p style={{ marginBottom: 12 }}>{t('invalidLinksFound', String(invalidResults.length))}</p>
                         <div style={{ maxHeight: 300, overflow: 'auto' }}>
                             {invalidResults.map(r => (
                                 <div key={r.id} className="link-check-item">
@@ -324,10 +367,10 @@ export default function App() {
                             <button className="btn btn-primary" style={{ marginTop: 12 }} onClick={async () => {
                                 await moveToInvalid(invalidResults.map(r => r.id!));
                                 setLinkCheckOpen(false);
-                                load();
-                                showToast(t('movedToInvalid') || '已移至失效书签文件夹', 'success');
+                                load({ silent: true });
+                                showToast(t('movedToInvalid'), 'success');
                             }}>
-                                📂 {t('moveToInvalid') || '移至失效书签文件夹'}
+                                📂 {t('moveToInvalid')}
                             </button>
                         )}
                     </div>
@@ -342,12 +385,15 @@ export default function App() {
 
 // Helper: collect folder options for select
 interface FolderOption { id: string; title: string; depth: number }
-function collectFolders(nodes: BookmarkNode[], depth = 0): FolderOption[] {
+type TFn = (key: string, substitutions?: string | string[]) => string;
+function collectFolders(nodes: BookmarkNode[], t: TFn, depth = 0): FolderOption[] {
     const result: FolderOption[] = [];
     for (const node of nodes) {
         if (!node.url) {
-            result.push({ id: node.id, title: node.title || '未命名', depth });
-            if (node.children) result.push(...collectFolders(node.children, depth + 1));
+            if (node.id !== '0') {
+                result.push({ id: node.id, title: node.title || t('untitled'), depth });
+            }
+            if (node.children) result.push(...collectFolders(node.children, t, node.id === '0' ? depth : depth + 1));
         }
     }
     return result;

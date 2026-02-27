@@ -7,7 +7,8 @@ import { useSettings } from '@/hooks/useSettings';
 import { useI18n } from '@/hooks/useI18n';
 import { ToastContainer, useToast } from '@/components/Toast';
 import { callBackground } from '@/lib/utils';
-import { maskKey } from '@/lib/utils';
+import { ensureOriginsPermission, urlToOriginPattern } from '@/lib/permissions';
+import { applyThemeMode, normalizeThemeMode } from '@/lib/theme';
 import './settings.css';
 
 export default function App() {
@@ -40,13 +41,7 @@ export default function App() {
 
     // Apply dark mode
     useEffect(() => {
-        if (darkMode === 'dark') {
-            document.documentElement.classList.add('dark-mode');
-        } else if (darkMode === 'light') {
-            document.documentElement.classList.remove('dark-mode');
-        } else {
-            document.documentElement.classList.remove('dark-mode');
-        }
+        applyThemeMode(normalizeThemeMode(darkMode));
     }, [darkMode]);
 
     const handleSave = useCallback(async () => {
@@ -65,13 +60,23 @@ export default function App() {
             active.model = model;
         }
         await save(updated);
-        showToast(t('saved') || '已保存', 'success');
+        showToast(t('saved'), 'success');
     }, [settings, darkMode, language, whitelist, apiEndpoint, apiKey, model, save, showToast, t]);
 
     const handleTest = async () => {
         setTesting(true);
         try {
-            const result = await callBackground<any>({ type: 'TEST_AI_CONNECTION' });
+            const active = settings?.aiConfigs?.find(c => c.id === settings.activeAiConfigId);
+            const endpoint = active?.apiEndpoint || apiEndpoint;
+            const origin = endpoint ? urlToOriginPattern(endpoint) : null;
+            if (!origin) throw new Error(t('apiEndpointInvalid'));
+            const granted = await ensureOriginsPermission([origin]);
+            if (!granted) throw new Error(t('apiPermissionRequired'));
+
+            let result = await callBackground<any>({ type: 'TEST_AI_CONNECTION' });
+            if (result?.error && /unknown message type/i.test(String(result.error || ''))) {
+                result = await callBackground<any>({ type: 'AI_TEST' });
+            }
             if (result.error) throw new Error(result.error);
             showToast(`✅ ${result.reply} (${result.elapsed}ms)`, 'success');
         } catch (err) {
@@ -100,65 +105,76 @@ export default function App() {
     return (
         <div className="settings-container">
             <header className="settings-header">
-                <h1>⚙️ {t('settings') || '设置'}</h1>
+                <h1>⚙️ {t('settings')}</h1>
             </header>
 
             <div className="settings-content">
                 {/* Appearance */}
                 <section className="settings-section card">
-                    <h2>{t('appearance') || '外观'}</h2>
+                    <h2>{t('appearance')}</h2>
                     <div className="settings-field">
-                        <label>{t('darkMode') || '深色模式'}</label>
+                        <label>{t('darkMode')}</label>
                         <select value={darkMode} onChange={e => setDarkMode(e.target.value)}>
-                            <option value="auto">{t('auto') || '跟随系统'}</option>
-                            <option value="light">{t('light') || '浅色'}</option>
-                            <option value="dark">{t('dark') || '深色'}</option>
+                            <option value="auto">{t('auto')}</option>
+                            <option value="light">{t('light')}</option>
+                            <option value="dark">{t('dark')}</option>
                         </select>
                     </div>
                     <div className="settings-field">
-                        <label>{t('language') || '语言'}</label>
+                        <label>{t('language')}</label>
                         <select value={language} onChange={e => setLanguage(e.target.value)}>
-                            <option value="zh_CN">简体中文</option>
-                            <option value="en">English</option>
+                            <option value="zh_CN">{t('langZhCN')}</option>
+                            <option value="en">{t('langEn')}</option>
                         </select>
                     </div>
                 </section>
 
                 {/* AI Config */}
                 <section className="settings-section card">
-                    <h2>🤖 {t('aiConfig') || 'AI 配置'}</h2>
-                    <p className="settings-hint">{t('aiConfigHint') || '配置当前 AI 服务（推荐在 AI 分类页管理多个配置）'}</p>
+                    <h2>🤖 {t('aiConfig')}</h2>
+                    <p className="settings-hint">{t('aiConfigHint')}</p>
                     <div className="settings-field">
-                        <label>{t('apiEndpoint') || 'API 端点'}</label>
-                        <input type="url" value={apiEndpoint} onChange={e => setApiEndpoint(e.target.value)} placeholder="https://api.example.com/v1/chat/completions" />
+                        <label>{t('apiEndpoint')}</label>
+                        <input type="url" value={apiEndpoint} onChange={e => setApiEndpoint(e.target.value)} placeholder={t('apiEndpointPlaceholder')} />
                     </div>
                     <div className="settings-field">
-                        <label>{t('apiKey') || 'API 密钥'}</label>
+                        <label>{t('apiKey')}</label>
                         <div style={{ display: 'flex', gap: 8 }}>
-                            <input type={showKey ? 'text' : 'password'} value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder="sk-..." style={{ flex: 1 }} />
+                            <input type={showKey ? 'text' : 'password'} value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder={t('apiKeyPlaceholder')} style={{ flex: 1 }} />
                             <button className="btn btn-sm" onClick={() => setShowKey(!showKey)}>{showKey ? '🙈' : '👁️'}</button>
                         </div>
                     </div>
                     <div className="settings-field">
-                        <label>{t('model') || '模型'}</label>
-                        <input type="text" value={model} onChange={e => setModel(e.target.value)} placeholder="gpt-3.5-turbo" />
+                        <label>{t('model')}</label>
+                        <input type="text" value={model} onChange={e => setModel(e.target.value)} placeholder={t('modelPlaceholder')} />
                     </div>
                     <button className="btn" onClick={handleTest} disabled={testing}>
-                        {testing ? '⏳ ...' : `🔌 ${t('testConnection') || '测试连接'}`}
+                        {testing ? '⏳ ...' : `🔌 ${t('testConnection')}`}
                     </button>
                 </section>
 
                 {/* Firewall whitelist */}
                 <section className="settings-section card">
-                    <h2>🛡️ {t('firewallWhitelist') || '防火墙白名单'}</h2>
-                    <p className="settings-hint">{t('firewallHint') || '这些域名在检测失效链接时将被跳过（每行一个）'}</p>
-                    <textarea rows={6} value={whitelist} onChange={e => setWhitelist(e.target.value)} placeholder="google.com&#10;youtube.com" />
+                    <h2>🛡️ {t('firewallWhitelist')}</h2>
+                    <p className="settings-hint">{t('firewallWhitelistDesc')}</p>
+                    <textarea rows={6} value={whitelist} onChange={e => setWhitelist(e.target.value)} placeholder={t('firewallWhitelistPlaceholder')} />
+                </section>
+
+                {/* Privacy */}
+                <section className="settings-section card">
+                    <h2>🔒 {t('privacy')}</h2>
+                    <p className="settings-hint">{t('privacyHint')}</p>
+                    <ul style={{ margin: 0, paddingLeft: 18, color: 'var(--text-secondary)', fontSize: 13, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        <li>{t('privacyApiKey')}</li>
+                        <li>{t('privacyAiData')}</li>
+                        <li>{t('privacyLinkCheck')}</li>
+                    </ul>
                 </section>
 
                 {/* Save */}
                 <div className="settings-actions">
                     <button className="btn btn-primary" onClick={handleSave}>
-                        💾 {t('save') || '保存设置'}
+                        💾 {t('saveSettings')}
                     </button>
                     <span className="settings-shortcut">Ctrl+S</span>
                 </div>

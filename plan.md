@@ -1,90 +1,128 @@
-# 书签树 (Bookmark Tree) — Chrome 扩展
+# BookMarkMap AI 全量分类重构计划
 
-> Manifest V3。用树状结构管理书签：搜索、重命名/删除/移动、失效链接检测、AI 智能分类（多配置 + 用量统计）。
+> 更新时间：2026-02-22
+> 目标：将“AI 分类”重构为对**全部书签**进行统一规划与落库。
 
-## 当前状态（最后更新：2026-02-09）
+## 1. 需求基线（按你的要求）
+- 必须提取**所有书签项**（包含任意层级文件夹内的书签）。
+- 向 AI 发送每个书签的**名称（title）**做分类依据。
+- AI 返回分类方案后，将不同分类写入不同文件夹。
+- 应用后书签应全部可追踪，不允许“无归属”。
 
-### 已实现（可用）
-- **Popup（弹窗）**：树状展示、搜索、展开状态记忆、右键菜单（打开/复制链接/重命名/删除）、跳转设置页/完整页面
-- **主页面（全屏）**：全部/最近（近 7 天）/已失效视图、搜索、右键菜单（打开/复制/重命名/移动/删除）、新建文件夹、失效链接检测（批量 + 进度 + 可选移动到“已失效书签”文件夹）
-- **AI 智能分类页**：支持多 API 配置（Kimi / DeepSeek / GLM / 自定义）、一键切换当前配置、测试连接、token 用量统计、生成分类建议并可一键应用（创建文件夹 + 移动书签）
-- **设置页**：API 端点/Key/模型（会同步到“当前 AI 配置”）、测试连接、防火墙白名单、深色模式、语言
-- **后台 Service Worker**：默认设置初始化；AI 请求（OpenAI 兼容 Chat Completions）；token 用量统计写入配置；设置读写；书签变更事件监听（目前仅日志）
-- **国际化**：`zh_CN` / `en`（部分页面仍存在硬编码文案）
+## 2. 本次重构目标
+- 统一 AI 分类流程为“全量采集 -> AI 规划 -> AI 分类 -> 批量应用”。
+- 移除当前“分批过程中大量失败导致部分未应用”的不确定行为。
+- 保证分类应用阶段不会反复创建重复空文件夹。
+- 提供可复盘日志：总数、成功数、失败数、未分类数、每类数量。
 
-### 已知限制 / 待改进
-- Popup 里“移动 / 检测失效链接”按钮目前仍是占位提示（核心能力在主页面）
-- AI 的“token 用量统计”依赖服务端返回 `usage` 字段；部分厂商/网关可能不返回或字段不同
-- AI 输出解析依赖模型按要求返回 JSON；如失败可尝试更换模型/降低温度/减少分类数量
-- `host_permissions` 目前为 `<all_urls>`（便于调试；若计划上架建议收敛到具体域名）
+## 3. 非目标（本次不做）
+- 不做 MindMap 侧重构。
+- 不做书签内容抓取（HTML正文），仅按 title（必要时后续可扩展 domain）。
+- 不做多轮自动纠错（先保证一轮全量可用）。
 
-## 快速开始（调试安装）
-> ⚠️ 本项目使用 Vite + `@crxjs/vite-plugin`（React/TS）。**不能直接把仓库根目录当作扩展加载**，否则会出现 Popup 一直停在“正在初始化 / JavaScript 加载失败”的情况（因为 manifest 指向的是 TS/TSX 源码，Chrome 无法直接解析）。
+## 4. 目标流程（端到端）
+1. 全量采集
+- 从 `chrome.bookmarks.getTree()` 递归提取所有 `url` 节点。
+- 形成 `[{ id, title }]` 全量列表（title 为空时写默认占位，如“未命名书签”）。
 
-### 开发模式（推荐）
-1. 安装依赖：`npm install`
-2. 启动开发构建：`npm run dev`（保持运行）
-3. 打开 Chrome → `chrome://extensions/` → 打开“开发者模式”
-4. “加载已解压的扩展程序” → 选择 **`dist/`** 目录
-5. 点击扩展图标打开 Popup（修改代码后一般会自动刷新；不刷新时手动点“重新加载扩展”）
+2. AI 规划分类（Plan）
+- 输入：全量 `title` 列表（不裁剪、不按页漏项）。
+- 输出：`plan[]`（一级分类名列表，数量受上限约束）。
 
-### 生产构建（打包/发布）
-1. 构建：`npm run build`
-2. 在 `chrome://extensions/` 里加载 **`dist/`** 目录（或将 `dist/` 打包发布）
+3. AI 归类映射（Assign）
+- 输入：全量 `id+title` 与 `plan[]`。
+- 输出：`[{ category, bookmarkIds[] }]`。
+- 约束：每个 bookmarkId 只能出现一次。
 
-## 目录结构（与仓库一致）
+4. 结果归一化
+- 去重、补漏：若有未返回 ID，统一落到“未分类”。
+- 校验：分类后总数必须等于输入总数。
 
+5. 应用落库
+- 在目标父文件夹下按分类创建/复用文件夹。
+- 将每个 ID 对应书签 move 到目标分类文件夹。
+- 记录操作历史（支持回滚）。
+
+## 5. 数据契约（重构后）
+
+### 5.1 前端 -> 后台（建议）
+- `AI_CLASSIFY_ALL_BOOKMARKS`
 ```
-BookMark_Tree/
-├── manifest.json              # 源 manifest（给 Vite/CRXJS 用）
-├── vite.config.ts
-├── popup.html                 # Popup 入口（Vite HTML entry）
-├── bookmark-tree.html         # 主页面入口（Vite HTML entry）
-├── mindmap.html               # 思维导图入口（Vite HTML entry）
-├── ai.html                    # AI 分类入口（Vite HTML entry）
-├── settings.html              # 设置入口（Vite HTML entry）
-├── plan.md
-├── ai_guide.md
-├── src/
-│   ├── background/            # MV3 service worker（TS）
-│   ├── pages/                 # React 页面（popup/main/settings/ai/mindmap）
-│   ├── lib/                   # 书签/AI/链接检测等核心逻辑（TS）
-│   └── styles/                # 通用样式（TS/React 版本）
-├── dist/                      # 构建产物（Chrome 实际加载这个目录）
-├── icons/
-│   ├── icon16.png
-│   ├── icon48.png
-│   └── icon128.png
-└── _locales/
-    ├── en/messages.json
-    └── zh_CN/messages.json
+{
+  type: 'AI_CLASSIFY_ALL_BOOKMARKS',
+  configId: string | null,
+  parentFolderId: string,
+  opId: string,
+  bookmarks: Array<{ id: string; title: string }>
+}
 ```
 
-## 核心模块（实现来源）
-- `src/lib/bookmark-manager.ts`：封装 `chrome.bookmarks`（CRUD + 本地搜索/flatten + “已失效书签”文件夹与批量移动）
-- `src/lib/link-checker.ts`：批量检测 URL（白名单 + HEAD/GET）
-- `src/components/TreeView.tsx`：树渲染（展开状态保存在 `chrome.storage.local`）
-- `src/background/index.ts`：MV3 Service Worker（消息路由、AI 请求、设置读写、用量统计）
+### 5.2 后台 -> 前端
+```
+{
+  categories: Array<{
+    category: string,
+    reason?: string,
+    bookmarks: Array<{ id: string; title: string }>
+  }>,
+  summary: {
+    total: number,
+    assigned: number,
+    uncategorized: number,
+    failed: number
+  },
+  usage?: {
+    prompt_tokens?: number,
+    completion_tokens?: number,
+    total_tokens?: number
+  }
+}
+```
 
-> 备注：仓库内仍保留部分旧版（非 Vite/React）目录：`popup/`、`pages/`、`scripts/`、`styles/`（当前构建链路以 `src/` 为准，可后续再统一清理）。
+## 6. 应用策略（文件夹创建/复用）
+- 默认优先复用目标目录下已存在同名分类文件夹。
+- 同名冲突时不自动生成多个“(AI)”副本，要求显式选择复用或改名。
+- 新建后若该分类最终无书签成功移动，自动删除该空文件夹。
 
-## AI 集成（OpenAI 兼容 Chat Completions）
-- 本项目 AI 请求使用“OpenAI 兼容”格式：`POST` + `Authorization: Bearer <API_KEY>` + `model/messages`
-- 支持多配置：保存在 `settings.aiConfigs`，当前使用项为 `settings.activeAiConfigId`
-- 具体配置方式与 Kimi / DeepSeek / GLM 的示例见：`ai_guide.md`
+## 7. 错误处理策略
+- AI 返回不合法 JSON：终止应用，仅展示错误与原始片段。
+- 网络失败：该批次标记失败并进入“未分类/失败列表”，不得静默丢失。
+- MV3 通道关闭：前端应收到明确错误并可重试，不应产生“部分空目录”。
 
-## 权限说明（manifest）
-| 权限 | 用途 |
-|------|------|
-| `bookmarks` | 读取与管理书签 |
-| `storage` | 保存设置（含 API Key） |
-| `tabs` | 打开新标签页等 |
-| `host_permissions` | 允许访问外部 API / 站点（当前为 `<all_urls>`） |
+## 8. 验收标准（必须满足）
+- 输入总书签数 = 分类结果内书签总数（含“未分类”）。
+- 应用后：目标分类目录中的书签数与分类结果一致。
+- 不出现批量重复空文件夹（如多个“笔记(AI)”且无内容）。
+- 失败项可见、可重试、可追踪。
 
-## Roadmap（下一步优先级）
-- [ ] AI：分类建议支持手动编辑/合并分类 + 应用前预检（目标文件夹是否已存在）
-- [ ] AI：提供“撤销/回滚”（记录移动前 parentId/index，支持一键恢复）
-- [ ] Popup：实现“移动到...”UI（可复用主页面的移动弹窗思路）
-- [ ] Popup：接入“失效链接检测”并支持“移动到已失效书签”
-- [ ] i18n：补齐主页面/设置页/弹窗的硬编码文案
-- [ ] 发布准备：收敛 `host_permissions`、完善隐私说明（API Key 存储）、兼容性与异常处理
+## 9. 实施步骤（代码层）
+1. 后台重构（`src/background/index.ts`）
+- 增加全量单任务消息类型（建议：`AI_CLASSIFY_ALL_BOOKMARKS`）。
+- 将“规划 + 归类 + 校验 + 汇总”收敛为单流程。
+- 输出统一 `summary` 与结构化 `categories`。
+
+2. AI 页重构（`src/pages/ai/App.tsx`）
+- 移除旧的多分支协议混用入口（保留兼容层但不走主路径）。
+- “开始分类”改为一次全量请求 + 一次结果渲染。
+- “应用前预检”只处理复用/命名冲突，不再修改分类总量。
+
+3. 落库重构
+- 应用阶段增加“创建前同名复用 + 空目录回收 + 结果核对”。
+- 保留操作历史，支持一键回滚。
+
+4. 验证
+- 小样本（<200）、中样本（200~2000）、大样本（2000+）各跑一轮。
+- 人工抽样验证分类覆盖率和文件夹落库准确性。
+
+## 10. 风险与缓解
+- 风险：一次性全量标题可能触发模型上下文/风控限制。
+- 缓解：
+  - 主路径仍按“全量语义”执行；若超限则自动进入“同一 plan 下分段 assign”，最终覆盖率仍必须 = 100%。
+  - 记录每段映射并在最终阶段做全量补漏。
+
+## 11. 已确认决策（2026-02-22）
+1. AI 输入严格使用 `title`（不传 `domain`）。
+2. AI 无法归类或请求失败的条目，统一并入“未分类(AI)”并参与应用。
+3. 分类文件夹创建位置固定为页面选择的 `parentFolderId`。
+4. 目标目录下存在同名分类文件夹时，默认优先“复用”。
+5. 接受超大数据量时自动分段 assign，但最终覆盖率必须为 100%。

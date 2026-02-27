@@ -62,6 +62,15 @@
     box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
 }
 
+.popup-search-actions {
+    margin-top: 8px;
+}
+
+.popup-open-all-btn {
+    width: 100%;
+    justify-content: center;
+}
+
 .popup-content {
     flex: 1;
     overflow-y: auto;
@@ -81,4 +90,64 @@
     justify-content: center;
     font-size: 12px;
     padding: 6px 8px;
+}
+
+/* Link check modal */
+.link-check-progress {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 4px;
+}
+
+.link-check-progress-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.progress-bar {
+    width: 100%;
+    height: 10px;
+    border-radius: 999px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--primary-color), var(--info));
+    transition: width 120ms ease;
+}
+
+.link-check-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.link-check-title {
+    font-weight: 500;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.link-check-url {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.link-check-status {
+    flex-shrink: 0;
 }

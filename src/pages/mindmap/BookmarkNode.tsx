@@ -13,15 +13,17 @@ interface BookmarkNodeData {
     childCount: number;
     isCollapsed: boolean;
     isSearchMatch: boolean;
+    isDropTarget?: boolean;
     onToggle: () => void;
     [key: string]: unknown;
 }
 
-export const BookmarkNodeComponent = memo(({ data }: NodeProps) => {
+export const BookmarkNodeComponent = memo(({ data, dragging }: NodeProps) => {
     const d = data as unknown as BookmarkNodeData;
     const [hovered, setHovered] = useState(false);
 
     const handleClick = () => {
+        if (dragging) return;
         if (d.isFolder) {
             d.onToggle();
         } else if (d.url) {
@@ -31,7 +33,7 @@ export const BookmarkNodeComponent = memo(({ data }: NodeProps) => {
 
     return (
         <div
-            className={`mindmap-node ${d.isFolder ? 'folder' : 'bookmark'} ${d.isSearchMatch ? 'search-match' : ''} ${d.isCollapsed ? 'collapsed' : ''}`}
+            className={`mindmap-node ${d.isFolder ? 'folder' : 'bookmark'} ${d.isSearchMatch ? 'search-match' : ''} ${d.isCollapsed ? 'collapsed' : ''} ${d.isDropTarget ? 'drop-target' : ''}`}
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
             onClick={handleClick}

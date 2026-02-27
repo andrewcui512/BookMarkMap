@@ -1,158 +1,181 @@
 {
   "../../../../@crx/manifest": {
-    "file": "assets/crx-manifest.js-Bo1Pe3TH.js",
+    "file": "assets/crx-manifest.js-BnCz8CBr.js",
     "name": "crx-manifest.js",
     "src": "../../../../@crx/manifest",
     "isEntry": true
   },
-  "_ContextMenu-!~{008}~.js": {
-    "file": "assets/ContextMenu-BvaljUaR.css",
-    "src": "_ContextMenu-!~{008}~.js"
+  "_ContextMenu-!~{009}~.js": {
+    "file": "assets/ContextMenu-CJ8AeGjS.css",
+    "src": "_ContextMenu-!~{009}~.js"
   },
-  "_ContextMenu-sL3MTjRY.js": {
-    "file": "assets/ContextMenu-sL3MTjRY.js",
+  "_ContextMenu-BrKKxNoT.js": {
+    "file": "assets/ContextMenu-BrKKxNoT.js",
     "name": "ContextMenu",
     "imports": [
-      "_common-CjGTj4NI.js"
+      "_common-CxJ9dy5H.js"
     ],
     "css": [
-      "assets/ContextMenu-BvaljUaR.css"
+      "assets/ContextMenu-CJ8AeGjS.css"
     ]
   },
   "_Modal-!~{00a}~.js": {
     "file": "assets/Modal-nsvwLIpt.css",
     "src": "_Modal-!~{00a}~.js"
   },
-  "_Modal-C_-R0INC.js": {
-    "file": "assets/Modal-C_-R0INC.js",
+  "_Modal-DtFcqG8J.js": {
+    "file": "assets/Modal-DtFcqG8J.js",
     "name": "Modal",
     "imports": [
-      "_common-CjGTj4NI.js"
+      "_common-CxJ9dy5H.js"
     ],
     "css": [
       "assets/Modal-nsvwLIpt.css"
     ]
   },
-  "_ai-config-D5-EUCGD.js": {
-    "file": "assets/ai-config-D5-EUCGD.js",
-    "name": "ai-config",
+  "_TreeView-!~{008}~.js": {
+    "file": "assets/TreeView-DJkfsAei.css",
+    "src": "_TreeView-!~{008}~.js"
+  },
+  "_TreeView-CodGuUgg.js": {
+    "file": "assets/TreeView-CodGuUgg.js",
+    "name": "TreeView",
     "imports": [
-      "_utils-BE-Z_0xs.js"
+      "_common-CxJ9dy5H.js"
+    ],
+    "css": [
+      "assets/TreeView-DJkfsAei.css"
     ]
+  },
+  "_ai-config-OKMW6SbI.js": {
+    "file": "assets/ai-config-OKMW6SbI.js",
+    "name": "ai-config"
   },
   "_common-!~{007}~.js": {
-    "file": "assets/common-DP5qbdc7.css",
+    "file": "assets/common-Cz0lzNX1.css",
     "src": "_common-!~{007}~.js"
   },
-  "_common-CjGTj4NI.js": {
-    "file": "assets/common-CjGTj4NI.js",
+  "_common-CxJ9dy5H.js": {
+    "file": "assets/common-CxJ9dy5H.js",
     "name": "common",
     "css": [
-      "assets/common-DP5qbdc7.css"
+      "assets/common-Cz0lzNX1.css"
     ]
   },
-  "_useBookmarks-C2K0O68e.js": {
-    "file": "assets/useBookmarks-C2K0O68e.js",
-    "name": "useBookmarks",
-    "imports": [
-      "_common-CjGTj4NI.js"
-    ]
+  "_link-checker-D0hMGnv-.js": {
+    "file": "assets/link-checker-D0hMGnv-.js",
+    "name": "link-checker"
   },
-  "_useSettings-DUct7jFj.js": {
-    "file": "assets/useSettings-DUct7jFj.js",
+  "_permissions-CviASgrj.js": {
+    "file": "assets/permissions-CviASgrj.js",
+    "name": "permissions"
+  },
+  "_useSettings-BWI8csDv.js": {
+    "file": "assets/useSettings-BWI8csDv.js",
     "name": "useSettings",
     "imports": [
-      "_common-CjGTj4NI.js",
-      "_ai-config-D5-EUCGD.js"
+      "_common-CxJ9dy5H.js",
+      "_ai-config-OKMW6SbI.js"
     ]
   },
-  "_utils-BE-Z_0xs.js": {
-    "file": "assets/utils-BE-Z_0xs.js",
-    "name": "utils"
+  "_useTheme-dh6vAdNV.js": {
+    "file": "assets/useTheme-dh6vAdNV.js",
+    "name": "useTheme",
+    "imports": [
+      "_common-CxJ9dy5H.js"
+    ]
   },
   "ai.html": {
-    "file": "assets/ai-BKSAKVrO.js",
+    "file": "assets/ai-auPvSl_s.js",
     "name": "ai",
     "src": "ai.html",
     "isEntry": true,
     "imports": [
-      "_common-CjGTj4NI.js",
-      "_useBookmarks-C2K0O68e.js",
-      "_useSettings-DUct7jFj.js",
-      "_Modal-C_-R0INC.js",
-      "_utils-BE-Z_0xs.js",
-      "_ai-config-D5-EUCGD.js"
+      "_common-CxJ9dy5H.js",
+      "_useTheme-dh6vAdNV.js",
+      "_useSettings-BWI8csDv.js",
+      "_Modal-DtFcqG8J.js",
+      "_ai-config-OKMW6SbI.js",
+      "_permissions-CviASgrj.js"
     ],
     "css": [
-      "assets/ai-cVf-98d7.css"
+      "assets/ai-CaA08SCQ.css"
     ]
   },
-  "bookmark-tree.html": {
-    "file": "assets/main-DM7cx8Jo.js",
+  "bookmark-map.html": {
+    "file": "assets/main-4LwQfk3s.js",
     "name": "main",
-    "src": "bookmark-tree.html",
+    "src": "bookmark-map.html",
     "isEntry": true,
     "imports": [
-      "_common-CjGTj4NI.js",
-      "_ContextMenu-sL3MTjRY.js",
-      "_Modal-C_-R0INC.js",
-      "_useBookmarks-C2K0O68e.js",
-      "_utils-BE-Z_0xs.js"
+      "_common-CxJ9dy5H.js",
+      "_TreeView-CodGuUgg.js",
+      "_ContextMenu-BrKKxNoT.js",
+      "_Modal-DtFcqG8J.js",
+      "_useTheme-dh6vAdNV.js",
+      "_link-checker-D0hMGnv-.js",
+      "_permissions-CviASgrj.js"
     ],
     "css": [
-      "assets/main-BODdMvvI.css"
+      "assets/main-iqFahtiR.css"
     ]
   },
   "mindmap.html": {
-    "file": "assets/mindmap-BwIRLhmH.js",
+    "file": "assets/mindmap-BAw2pCjA.js",
     "name": "mindmap",
     "src": "mindmap.html",
     "isEntry": true,
     "imports": [
-      "_common-CjGTj4NI.js",
-      "_useBookmarks-C2K0O68e.js"
+      "_common-CxJ9dy5H.js",
+      "_useTheme-dh6vAdNV.js",
+      "_ContextMenu-BrKKxNoT.js"
     ],
     "css": [
-      "assets/mindmap-CDKu9SAF.css"
+      "assets/mindmap-D62J3D43.css"
     ]
   },
   "popup.html": {
-    "file": "assets/popup-Cui88ZBN.js",
+    "file": "assets/popup-BJkfqRDN.js",
     "name": "popup",
     "src": "popup.html",
     "isEntry": true,
     "imports": [
-      "_common-CjGTj4NI.js",
-      "_ContextMenu-sL3MTjRY.js",
-      "_useBookmarks-C2K0O68e.js"
+      "_common-CxJ9dy5H.js",
+      "_TreeView-CodGuUgg.js",
+      "_ContextMenu-BrKKxNoT.js",
+      "_Modal-DtFcqG8J.js",
+      "_useTheme-dh6vAdNV.js",
+      "_link-checker-D0hMGnv-.js",
+      "_permissions-CviASgrj.js"
     ],
     "css": [
-      "assets/popup-CghGMEDp.css"
+      "assets/popup-DCtyc1ae.css"
     ]
   },
   "settings.html": {
-    "file": "assets/settings-BE6moNIB.js",
+    "file": "assets/settings-DG2tU625.js",
     "name": "settings",
     "src": "settings.html",
     "isEntry": true,
     "imports": [
-      "_common-CjGTj4NI.js",
-      "_useSettings-DUct7jFj.js",
-      "_utils-BE-Z_0xs.js",
-      "_ai-config-D5-EUCGD.js"
+      "_common-CxJ9dy5H.js",
+      "_useSettings-BWI8csDv.js",
+      "_ai-config-OKMW6SbI.js",
+      "_permissions-CviASgrj.js"
     ],
     "css": [
       "assets/settings-CeKSZddh.css"
     ]
   },
   "src/background/index.ts": {
-    "file": "assets/index.ts-DDfCzDmO.js",
+    "file": "assets/index.ts-KerdxL8x.js",
     "name": "index.ts",
     "src": "src/background/index.ts",
     "isEntry": true,
     "imports": [
-      "_ai-config-D5-EUCGD.js",
-      "_utils-BE-Z_0xs.js"
+      "_ai-config-OKMW6SbI.js",
+      "_link-checker-D0hMGnv-.js",
+      "_permissions-CviASgrj.js"
     ]
   }
 }

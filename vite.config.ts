@@ -19,7 +19,7 @@ export default defineConfig({
         rollupOptions: {
             input: {
                 popup: resolve(__dirname, 'popup.html'),
-                main: resolve(__dirname, 'bookmark-tree.html'),
+                main: resolve(__dirname, 'bookmark-map.html'),
                 settings: resolve(__dirname, 'settings.html'),
                 ai: resolve(__dirname, 'ai.html'),
                 mindmap: resolve(__dirname, 'mindmap.html'),

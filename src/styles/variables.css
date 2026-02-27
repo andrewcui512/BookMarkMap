@@ -1,31 +1,33 @@
 :root {
-    /* Primary */
-    --primary-color: #4F46E5;
-    --primary-hover: #4338CA;
-    --primary-light: #EEF2FF;
+    color-scheme: light;
 
-    /* Background */
+    /* Primary (Light) */
+    --primary-color: #0284C7;
+    --primary-hover: #0369A1;
+    --primary-light: #E0F2FE;
+
+    /* Background (Light) */
     --bg-primary: #FFFFFF;
-    --bg-secondary: #F9FAFB;
-    --bg-tertiary: #F3F4F6;
+    --bg-secondary: #F7FBFF;
+    --bg-tertiary: #EEF6FB;
 
-    /* Text */
-    --text-primary: #111827;
-    --text-secondary: #6B7280;
-    --text-tertiary: #9CA3AF;
+    /* Text (Light) */
+    --text-primary: #0F172A;
+    --text-secondary: #475569;
+    --text-tertiary: #64748B;
 
-    /* Border */
-    --border-color: #E5E7EB;
-    --border-hover: #D1D5DB;
+    /* Border (Light) */
+    --border-color: #D8E3EE;
+    --border-hover: #BFD0E0;
 
-    /* Functional */
-    --success: #10B981;
+    /* Functional (Light) */
+    --success: #0F9D79;
     --success-light: #D1FAE5;
-    --warning: #F59E0B;
+    --warning: #D97706;
     --warning-light: #FEF3C7;
-    --error: #EF4444;
+    --error: #DC2626;
     --error-light: #FEE2E2;
-    --info: #3B82F6;
+    --info: #0284C7;
     --info-light: #DBEAFE;
 
     /* Shadow */
@@ -56,9 +58,13 @@
     --transition-slow: 300ms ease;
 }
 
-/* Dark mode - system preference */
+/* Dark mode - system preference (auto mode only) */
 @media (prefers-color-scheme: dark) {
-    :root {
+    :root:not(.light-mode):not(.dark-mode) {
+        color-scheme: dark;
+        --primary-color: #4F46E5;
+        --primary-hover: #4338CA;
+        --primary-light: #312E81;
         --bg-primary: #1F2937;
         --bg-secondary: #111827;
         --bg-tertiary: #374151;
@@ -67,7 +73,6 @@
         --text-tertiary: #9CA3AF;
         --border-color: #374151;
         --border-hover: #4B5563;
-        --primary-light: #312E81;
         --success-light: #064E3B;
         --warning-light: #78350F;
         --error-light: #7F1D1D;
@@ -75,8 +80,12 @@
     }
 }
 
-/* Manual dark mode class */
+/* Manual dark mode */
 .dark-mode {
+    color-scheme: dark;
+    --primary-color: #4F46E5;
+    --primary-hover: #4338CA;
+    --primary-light: #312E81;
     --bg-primary: #1F2937;
     --bg-secondary: #111827;
     --bg-tertiary: #374151;
@@ -85,9 +94,32 @@
     --text-tertiary: #9CA3AF;
     --border-color: #374151;
     --border-hover: #4B5563;
-    --primary-light: #312E81;
     --success-light: #064E3B;
     --warning-light: #78350F;
     --error-light: #7F1D1D;
     --info-light: #1E3A8A;
+}
+
+/* Manual light mode (forces light even if system is dark) */
+.light-mode {
+    color-scheme: light;
+    --primary-color: #0284C7;
+    --primary-hover: #0369A1;
+    --primary-light: #E0F2FE;
+    --bg-primary: #FFFFFF;
+    --bg-secondary: #F7FBFF;
+    --bg-tertiary: #EEF6FB;
+    --text-primary: #0F172A;
+    --text-secondary: #475569;
+    --text-tertiary: #64748B;
+    --border-color: #D8E3EE;
+    --border-hover: #BFD0E0;
+    --success: #0F9D79;
+    --success-light: #D1FAE5;
+    --warning: #D97706;
+    --warning-light: #FEF3C7;
+    --error: #DC2626;
+    --error-light: #FEE2E2;
+    --info: #0284C7;
+    --info-light: #DBEAFE;
 }

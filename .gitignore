@@ -1,0 +1,15 @@
+# macOS
+.DS_Store
+
+# Node / npm
+node_modules/
+npm-debug.log*
+
+# Local release artifacts
+bookmark-map-*.zip
+bookmark-map-*.zip.sha256
+*.sha256
+
+# Env files
+.env
+.env.*

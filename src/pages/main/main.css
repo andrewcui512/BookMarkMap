@@ -116,6 +116,36 @@
 }
 
 /* Link check results */
+.link-check-progress {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 4px;
+}
+
+.link-check-progress-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.progress-bar {
+    width: 100%;
+    height: 10px;
+    border-radius: 999px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--primary-color), var(--info));
+    transition: width 120ms ease;
+}
+
 .link-check-item {
     display: flex;
     align-items: center;

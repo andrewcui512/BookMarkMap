@@ -4,6 +4,7 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
+import { useI18n } from '@/hooks/useI18n';
 import './TreeView.css';
 
 interface TreeNode {
@@ -88,6 +89,7 @@ function TreeNodeItem({
     onClick?: (node: TreeNode) => void;
     getNodeClass?: (node: TreeNode) => string | string[] | undefined;
 }) {
+    const { t } = useI18n();
     const isFolder = !node.url;
     const isExpanded = expanded.has(node.id);
     const hasChildren = Array.isArray(node.children) && node.children.length > 0;
@@ -115,7 +117,7 @@ function TreeNodeItem({
     const extraClasses = getNodeClass?.(node);
     const classList = Array.isArray(extraClasses) ? extraClasses : extraClasses ? [extraClasses] : [];
 
-    const displayTitle = node.title || (isFolder ? '未命名文件夹' : '无标题');
+    const displayTitle = node.title || (isFolder ? t('untitledFolder') : t('untitledBookmark'));
 
     const handleClick = () => {
         if (isFolder) {
