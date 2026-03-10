@@ -63,60 +63,38 @@ export interface LinkCheckResult {
     title?: string;
 }
 
-// AI Classification types
-export interface ClassifyCategory {
-    category: string;
-    reason?: string;
-    bookmarks: { id: string; title: string; url: string }[];
-}
-
-export interface ClassifyResult {
-    categories: ClassifyCategory[];
-    skipped: number;
-    failed?: number;
-    usage: { prompt_tokens: number; completion_tokens: number; total_tokens: number } | null;
-}
-
-// Operation history for undo
-export interface MoveRecord {
-    bookmarkId: string;
-    fromParentId: string;
-    fromIndex: number;
-    toParentId: string;
-}
-
-export interface PrunedFolderRecord {
+// AI Search types
+export interface SearchBookmarkInput {
     id: string;
     title: string;
-    parentId: string;
-    index: number;
+    url: string;
+    dateAdded?: number;
 }
 
-export interface OperationRecord {
+export interface SearchResult {
     id: string;
-    timestamp: string;
-    description: string;
-    moves: MoveRecord[];
-    foldersCreated: string[];
-    prunedFolders?: PrunedFolderRecord[];
+    title: string;
+    url: string;
+    relevanceScore: number;  // 0-100
+    reason?: string;         // Why this bookmark matches
+}
+
+export interface AiSearchResponse {
+    results: SearchResult[];
+    query: string;
+    totalMatches: number;
+    usage: any | null;
+    cached: boolean;
 }
 
 // Message types for background communication
 export type MessageType =
     | 'CHECK_LINK'
     | 'CHECK_LINKS_BATCH'
-    | 'AI_CLASSIFY'
-    | 'AI_TEST'
-    | 'AI_CLASSIFY_ALL_BOOKMARKS'
-    | 'AI_PLAN_BOOKMARKS'
-    | 'AI_CLASSIFY_BOOKMARKS_BATCH'
-    | 'CLASSIFY_BOOKMARKS'
+    | 'AI_SEARCH_BOOKMARKS'
     | 'TEST_AI_CONNECTION'
     | 'GET_SETTINGS'
-    | 'SAVE_SETTINGS'
-    | 'SAVE_OPERATION'
-    | 'GET_OPERATIONS'
-    | 'DELETE_OPERATION';
+    | 'SAVE_SETTINGS';
 
 export interface ExtMessage {
     type: MessageType;

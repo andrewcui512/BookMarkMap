@@ -4,7 +4,7 @@
     "description": "Extension name"
   },
   "extDescription": {
-    "message": "Manage bookmarks in a tree structure with AI classification and broken link detection",
+    "message": "Manage bookmarks in a tree structure with AI-powered search and broken link detection",
     "description": "Extension description"
   },
   "searchPlaceholder": {
@@ -598,5 +598,33 @@
   "selected": {
     "message": "Selected",
     "description": "Precheck: selected"
+  },
+  "traditionalSearch": {
+    "message": "Traditional Search: Exact match by title and URL",
+    "description": "Traditional search tooltip"
+  },
+  "aiSearch": {
+    "message": "AI Search: Natural language semantic understanding",
+    "description": "AI search tooltip"
+  },
+  "traditional": {
+    "message": "Traditional",
+    "description": "Traditional search button"
+  },
+  "noAiResults": {
+    "message": "No results found by AI",
+    "description": "AI search no results"
+  },
+  "cachedResults": {
+    "message": "Cached results",
+    "description": "Cached results hint"
+  },
+  "aiSearchError": {
+    "message": "AI search failed",
+    "description": "AI search error"
+  },
+  "aiSearchNotConfigured": {
+    "message": "Please configure AI model in settings first",
+    "description": "AI not configured hint"
   }
 }

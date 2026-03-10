@@ -252,9 +252,6 @@ export default function App() {
                     <button className="sidebar-item" onClick={() => chrome.tabs.create({ url: chrome.runtime.getURL('mindmap.html') })}>
                         🗺️ {t('openBookMarkMap')}
                     </button>
-                    <button className="sidebar-item" onClick={() => chrome.tabs.create({ url: chrome.runtime.getURL('ai.html') })}>
-                        🤖 AI {t('classify')}
-                    </button>
                     <button className="sidebar-item" onClick={() => chrome.tabs.create({ url: chrome.runtime.getURL('settings.html') })}>
                         ⚙️ {t('settings')}
                     </button>

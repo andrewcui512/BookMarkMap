@@ -45,6 +45,16 @@
     border-bottom: 1px solid var(--border-color);
 }
 
+.popup-search-header {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.popup-search-header input {
+    flex: 1;
+}
+
 .popup-search input {
     width: 100%;
     padding: 8px 12px;
@@ -150,4 +160,13 @@
 
 .link-check-status {
     flex-shrink: 0;
+}
+
+.popup-error {
+    padding: 12px;
+    background: var(--bg-error, #ffebee);
+    color: var(--text-error, #c62828);
+    border-radius: 6px;
+    margin: 8px 16px;
+    font-size: 13px;
 }

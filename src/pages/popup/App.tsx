@@ -7,9 +7,12 @@ import { TreeView, useExpandedState } from '@/components/TreeView';
 import { ContextMenu, useContextMenu } from '@/components/ContextMenu';
 import { ToastContainer, useToast } from '@/components/Toast';
 import { Modal } from '@/components/Modal';
+import { SearchModeToggle } from '@/components/SearchModeToggle';
+import { AiSearchResults } from '@/components/AiSearchResults';
 import { useBookmarks } from '@/hooks/useBookmarks';
 import { useI18n } from '@/hooks/useI18n';
 import { useTheme } from '@/hooks/useTheme';
+import { useAiSearch } from '@/hooks/useAiSearch';
 import { checkLinks } from '@/lib/link-checker';
 import { ensureOriginsPermission, WEB_ACCESS_ORIGINS } from '@/lib/permissions';
 import * as bm from '@/lib/bookmark-manager';
@@ -28,6 +31,12 @@ export default function App() {
     const [searchQuery, setSearchQuery] = useState('');
     const [displayNodes, setDisplayNodes] = useState<any[]>([]);
 
+    // AI Search
+    const aiSearch = useAiSearch({
+        enabled: false,
+        onError: (err) => showToast(err.message, 'error'),
+    });
+
     // Modals
     const [moveOpen, setMoveOpen] = useState(false);
     const [moveTargetId, setMoveTargetId] = useState<string | null>(null);
@@ -43,12 +52,20 @@ export default function App() {
     }, [load]);
 
     useEffect(() => {
-        if (searchQuery.trim()) {
-            setDisplayNodes(searchLocal(searchQuery));
-        } else {
+        if (!searchQuery.trim()) {
             setDisplayNodes(bookmarks);
+            aiSearch.clear();
+            return;
         }
-    }, [bookmarks, searchQuery, searchLocal]);
+
+        if (aiSearch.aiSearchEnabled) {
+            // AI 搜索：不修改 displayNodes，使用 aiSearch.results
+            aiSearch.search(searchQuery, bookmarks);
+        } else {
+            // 传统搜索
+            setDisplayNodes(searchLocal(searchQuery));
+        }
+    }, [bookmarks, searchQuery, searchLocal, aiSearch.aiSearchEnabled]);
 
     const matchedBookmarkUrls = useMemo(() => {
         if (!searchQuery.trim()) return [];
@@ -223,13 +240,20 @@ export default function App() {
 
             {/* Search */}
             <div className="popup-search">
-                <input
-                    type="text"
-                    placeholder={t('searchPlaceholder')}
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                />
-                {searchQuery.trim() && (
+                <div className="popup-search-header">
+                    <input
+                        type="text"
+                        placeholder={t('searchPlaceholder')}
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                    <SearchModeToggle
+                        enabled={aiSearch.aiSearchEnabled}
+                        onChange={aiSearch.setAiSearchEnabled}
+                        searching={aiSearch.searching}
+                    />
+                </div>
+                {searchQuery.trim() && !aiSearch.aiSearchEnabled && (
                     <div className="popup-search-actions">
                         <button
                             className="btn btn-sm popup-open-all-btn"
@@ -258,36 +282,50 @@ export default function App() {
                     </div>
                 )}
 
-                {noResults && (
+                {noResults && !aiSearch.aiSearchEnabled && (
                     <div className="state-container">
                         <div className="state-icon">🔍</div>
                         <div className="state-text">{t('noResults')}</div>
                     </div>
                 )}
 
-                {!loading && !isEmpty && !noResults && (
-                    <TreeView
-                        nodes={displayNodes as any}
-                        searchQuery={searchQuery}
-                        expandedNodes={expanded}
-                        onToggle={onToggle}
-                        onContextMenu={(e, node) => {
-                            contextMenu.show(e, {
-                                id: node.id,
-                                title: node.title,
-                                url: node.url,
-                                isFolder: !node.url,
-                            }, menuItems({
-                                id: node.id,
-                                title: node.title,
-                                url: node.url,
-                                isFolder: !node.url,
-                            }));
-                        }}
-                        onClick={(node) => {
-                            if (node.url) chrome.tabs.create({ url: node.url });
-                        }}
+                {aiSearch.error && (
+                    <div className="popup-error">
+                        ⚠️ {aiSearch.error}
+                    </div>
+                )}
+
+                {searchQuery.trim() && aiSearch.aiSearchEnabled ? (
+                    <AiSearchResults
+                        results={aiSearch.results}
+                        onOpen={(result) => chrome.tabs.create({ url: result.url })}
+                        cached={aiSearch.cached}
                     />
+                ) : (
+                    !loading && !isEmpty && !noResults && (
+                        <TreeView
+                            nodes={displayNodes as any}
+                            searchQuery={searchQuery}
+                            expandedNodes={expanded}
+                            onToggle={onToggle}
+                            onContextMenu={(e, node) => {
+                                contextMenu.show(e, {
+                                    id: node.id,
+                                    title: node.title,
+                                    url: node.url,
+                                    isFolder: !node.url,
+                                }, menuItems({
+                                    id: node.id,
+                                    title: node.title,
+                                    url: node.url,
+                                    isFolder: !node.url,
+                                }));
+                            }}
+                            onClick={(node) => {
+                                if (node.url) chrome.tabs.create({ url: node.url });
+                            }}
+                        />
+                    )
                 )}
             </div>
 
@@ -302,11 +340,6 @@ export default function App() {
                     onClick={() => chrome.tabs.create({ url: chrome.runtime.getURL('mindmap.html') })}
                 >
                     🗺️ {t('openBookMarkMap')}
-                </button>
-                <button className="btn btn-sm"
-                    onClick={() => chrome.tabs.create({ url: chrome.runtime.getURL('ai.html') })}
-                >
-                    🤖 AI
                 </button>
             </div>
 

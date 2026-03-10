@@ -21,7 +21,6 @@ export default defineConfig({
                 popup: resolve(__dirname, 'popup.html'),
                 main: resolve(__dirname, 'bookmark-map.html'),
                 settings: resolve(__dirname, 'settings.html'),
-                ai: resolve(__dirname, 'ai.html'),
                 mindmap: resolve(__dirname, 'mindmap.html'),
             },
             output: {

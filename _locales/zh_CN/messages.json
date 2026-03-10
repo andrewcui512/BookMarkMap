@@ -4,7 +4,7 @@
     "description": "扩展名称"
   },
   "extDescription": {
-    "message": "以树状结构管理书签，支持 AI 智能分类和失效链接检测",
+    "message": "以树状结构管理书签，支持 AI 智能搜索和失效链接检测",
     "description": "扩展描述"
   },
   "searchPlaceholder": {
@@ -598,5 +598,33 @@
   "selected": {
     "message": "已选择",
     "description": "预检：已选择"
+  },
+  "traditionalSearch": {
+    "message": "传统搜索：根据标题和 URL 精确匹配",
+    "description": "传统搜索提示"
+  },
+  "aiSearch": {
+    "message": "AI 智能搜索：自然语言语义理解",
+    "description": "AI 搜索提示"
+  },
+  "traditional": {
+    "message": "传统",
+    "description": "传统搜索按钮"
+  },
+  "noAiResults": {
+    "message": "AI 未找到匹配结果",
+    "description": "AI 搜索无结果"
+  },
+  "cachedResults": {
+    "message": "缓存结果",
+    "description": "缓存结果提示"
+  },
+  "aiSearchError": {
+    "message": "AI 搜索失败",
+    "description": "AI 搜索错误"
+  },
+  "aiSearchNotConfigured": {
+    "message": "请先在设置页面配置 AI 模型",
+    "description": "AI 未配置提示"
   }
 }
