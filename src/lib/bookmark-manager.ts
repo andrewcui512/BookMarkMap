@@ -5,6 +5,7 @@
 
 import type { BookmarkNode } from '@/types/bookmark';
 import { getMessage } from '@/lib/i18n';
+import { parseSearchQuery, resolveTagAlias } from '@/lib/tags';
 
 type ChromeBookmarkTreeNode = chrome.bookmarks.BookmarkTreeNode;
 
@@ -85,23 +86,42 @@ export async function searchApi(query: string): Promise<ChromeBookmarkTreeNode[]
 }
 
 /** Local in-memory search (preserves tree structure) */
-export function search(bookmarks: BookmarkNode[], query: string): BookmarkNode[] {
-    const lowerQuery = query.toLowerCase();
+export function search(
+    bookmarks: BookmarkNode[],
+    query: string,
+    options?: { getTags?: (bookmarkId: string) => string[] }
+): BookmarkNode[] {
+    const { textQuery, tagFilters } = parseSearchQuery(query);
+    const lowerTextQuery = textQuery.toLowerCase();
+    const getTags = options?.getTags;
+    const resolvedTextAsTag = lowerTextQuery ? resolveTagAlias(lowerTextQuery) : null;
 
     function filterNode(node: BookmarkNode): BookmarkNode | null {
         const isFolder = !node.url;
-        const titleMatch = node.title?.toLowerCase().includes(lowerQuery);
-        const urlMatch = node.url?.toLowerCase().includes(lowerQuery);
+        const tags = getTags ? (getTags(node.id) || []) : [];
+        const tagFilterMatch = tagFilters.length === 0 || tagFilters.every((t) => tags.includes(t));
+
+        const titleMatch = lowerTextQuery
+            ? node.title?.toLowerCase().includes(lowerTextQuery)
+            : true;
+        const urlMatch = lowerTextQuery
+            ? node.url?.toLowerCase().includes(lowerTextQuery)
+            : true;
+        const tagsTextMatch = lowerTextQuery
+            ? tags.some((t) => t.toLowerCase().includes(lowerTextQuery)) || (resolvedTextAsTag ? tags.includes(resolvedTextAsTag) : false)
+            : true;
+        const textMatch = lowerTextQuery ? (titleMatch || urlMatch || tagsTextMatch) : true;
+        const selfMatch = tagFilterMatch && textMatch;
 
         if (isFolder && node.children) {
             const filteredChildren = node.children
                 .map((child) => filterNode(child))
                 .filter(Boolean) as BookmarkNode[];
 
-            if (filteredChildren.length > 0 || titleMatch) {
+            if (filteredChildren.length > 0 || selfMatch) {
                 return { ...node, children: filteredChildren };
             }
-        } else if (titleMatch || urlMatch) {
+        } else if (selfMatch) {
             return { ...node };
         }
 

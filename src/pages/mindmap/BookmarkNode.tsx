@@ -13,6 +13,8 @@ interface BookmarkNodeData {
     childCount: number;
     isCollapsed: boolean;
     isSearchMatch: boolean;
+    isInvalid?: boolean;
+    invalidLabel?: string;
     isDropTarget?: boolean;
     onToggle: () => void;
     [key: string]: unknown;
@@ -33,7 +35,7 @@ export const BookmarkNodeComponent = memo(({ data, dragging }: NodeProps) => {
 
     return (
         <div
-            className={`mindmap-node ${d.isFolder ? 'folder' : 'bookmark'} ${d.isSearchMatch ? 'search-match' : ''} ${d.isCollapsed ? 'collapsed' : ''} ${d.isDropTarget ? 'drop-target' : ''}`}
+            className={`mindmap-node ${d.isFolder ? 'folder' : 'bookmark'} ${d.isSearchMatch ? 'search-match' : ''} ${d.isCollapsed ? 'collapsed' : ''} ${d.isDropTarget ? 'drop-target' : ''} ${d.isInvalid ? 'invalid' : ''}`}
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
             onClick={handleClick}
@@ -47,6 +49,12 @@ export const BookmarkNodeComponent = memo(({ data, dragging }: NodeProps) => {
             <div className="mindmap-node-label" title={d.url || d.label}>
                 {d.label}
             </div>
+
+            {d.isInvalid && (
+                <span className="mindmap-node-tag invalid" title={d.invalidLabel || ''}>
+                    {d.invalidLabel || 'invalid'}
+                </span>
+            )}
 
             {d.isFolder && d.childCount > 0 && (
                 <span className="mindmap-node-count">{d.childCount}</span>

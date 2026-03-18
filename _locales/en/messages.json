@@ -626,5 +626,49 @@
   "aiSearchNotConfigured": {
     "message": "Please configure AI model in settings first",
     "description": "AI not configured hint"
+  },
+  "tags": {
+    "message": "Tags",
+    "description": "Tags feature"
+  },
+  "editTags": {
+    "message": "Edit Tags",
+    "description": "Edit tags"
+  },
+  "addTagPlaceholder": {
+    "message": "Type a tag and press Enter (comma separated supported)",
+    "description": "Tag input placeholder"
+  },
+  "tagsLocalOnlyHint": {
+    "message": "Tags are stored locally (not synced)",
+    "description": "Local-only tags hint"
+  },
+  "tagsLocalOnlyDesc": {
+    "message": "Tags are a local-only feature. Data is stored in this browser profile via chrome.storage.local and will not sync across devices. Uninstalling the extension or clearing browser data may remove tags.",
+    "description": "Settings: local-only tags description"
+  },
+  "noTags": {
+    "message": "No tags yet",
+    "description": "No tags hint"
+  },
+  "tagInvalid": {
+    "message": "invalid",
+    "description": "System tag: invalid"
+  },
+  "markInvalidTag": {
+    "message": "Tag as invalid",
+    "description": "Mark bookmarks with invalid tag"
+  },
+  "taggedInvalid": {
+    "message": "Tagged as invalid",
+    "description": "Tagged invalid success toast"
+  },
+  "add": {
+    "message": "Add",
+    "description": "Generic: add"
+  },
+  "close": {
+    "message": "Close",
+    "description": "Generic: close"
   }
 }

@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BookMarkMap · 封面</title>
+    <style>
+      :root{
+        --bg0:#f8fafc;
+        --bg1:#eef2ff;
+        --ink:#0f172a;
+        --muted:#334155;
+        --muted2:#64748b;
+        --primary:#4f46e5;
+        --cyan:#06b6d4;
+        --card:#ffffff;
+        --border:rgba(15,23,42,.10);
+        --shadow:0 26px 90px rgba(2,6,23,.16);
+        --shadow2:0 10px 28px rgba(2,6,23,.12);
+      }
+
+      html,body{
+        margin:0;
+        padding:0;
+        width:1080px;
+        height:1440px;
+        overflow:hidden;
+        font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Helvetica,Arial,"Arial Unicode MS","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+      }
+
+      .page{
+        width:100%;
+        height:100%;
+        background:
+          radial-gradient(920px 520px at 18% 10%, rgba(79,70,229,.22), transparent 60%),
+          radial-gradient(760px 440px at 90% 18%, rgba(6,182,212,.18), transparent 62%),
+          linear-gradient(135deg, var(--bg0), var(--bg1));
+        position:relative;
+        box-sizing:border-box;
+        padding:58px 58px 48px;
+      }
+
+      .top{
+        display:flex;
+        align-items:flex-start;
+        justify-content:space-between;
+        gap:18px;
+      }
+
+      .pill{
+        display:inline-flex;
+        align-items:center;
+        gap:10px;
+        padding:10px 14px;
+        border-radius:999px;
+        background:rgba(255,255,255,.74);
+        border:1px solid rgba(79,70,229,.28);
+        color:var(--primary);
+        font-weight:900;
+        font-size:18px;
+        letter-spacing:.2px;
+        backdrop-filter: blur(10px);
+      }
+
+      .right-pills{
+        display:flex;
+        gap:10px;
+        flex-wrap:wrap;
+        justify-content:flex-end;
+      }
+
+      .pill.gray{
+        border-color:rgba(15,23,42,.12);
+        color:rgba(15,23,42,.70);
+      }
+
+      h1{
+        margin:18px 0 8px;
+        font-size:70px;
+        line-height:1.05;
+        letter-spacing:-1px;
+        color:var(--ink);
+      }
+
+      .sub{
+        margin:0;
+        font-size:28px;
+        color:var(--muted);
+        line-height:1.32;
+      }
+
+      .shot-wrap{
+        margin-top:34px;
+        position:relative;
+      }
+
+      .shot{
+        width:964px;
+        background:var(--card);
+        border:1px solid var(--border);
+        border-radius:30px;
+        box-shadow:var(--shadow);
+        overflow:hidden;
+        position:relative;
+      }
+
+      .shot img{
+        width:100%;
+        display:block;
+      }
+
+      /* Anonymize folder names in the screenshot (demo data, same visible count) */
+      .shot-media{
+        position:relative;
+      }
+      .demo-tree{
+        position:absolute;
+        left:14.5%;
+        top:15.5%;
+        width:36.5%;
+        height:72%;
+        border-radius:14px;
+        background:rgba(2,6,23,.62);
+        border:1px solid rgba(148,163,184,.16);
+        box-shadow:0 10px 30px rgba(2,6,23,.25);
+        backdrop-filter: blur(10px);
+        padding:10px 10px 10px 14px;
+        box-sizing:border-box;
+        color:#e2e8f0;
+        pointer-events:none;
+      }
+      .demo-tree ul{
+        list-style:none;
+        margin:0;
+        padding:0;
+        font-size:14px;
+        line-height:30px;
+        letter-spacing:.2px;
+      }
+      .demo-tree li{
+        display:flex;
+        align-items:center;
+        gap:10px;
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
+      }
+      .caret{
+        width:16px;
+        color:rgba(226,232,240,.65);
+        display:inline-flex;
+        justify-content:center;
+        flex:0 0 16px;
+      }
+      .icon{
+        width:18px;
+        display:inline-flex;
+        justify-content:center;
+        flex:0 0 18px;
+        opacity:.92;
+      }
+      .name{
+        flex:1;
+        overflow:hidden;
+        text-overflow:ellipsis;
+      }
+      .count{
+        color:rgba(148,163,184,.9);
+        margin-left:6px;
+        flex:0 0 auto;
+      }
+
+      .callout{
+        position:absolute;
+        padding:12px 14px;
+        background:rgba(255,255,255,.82);
+        border:1px solid rgba(15,23,42,.10);
+        border-radius:16px;
+        box-shadow:var(--shadow2);
+        color:rgba(15,23,42,.78);
+        font-weight:800;
+        font-size:20px;
+        backdrop-filter: blur(10px);
+      }
+
+      .callout:after{
+        content:"";
+        position:absolute;
+        width:14px;
+        height:14px;
+        background:rgba(255,255,255,.82);
+        border-left:1px solid rgba(15,23,42,.10);
+        border-bottom:1px solid rgba(15,23,42,.10);
+        transform:rotate(45deg);
+      }
+
+      .c1{ left:34px; top:52px; }
+      .c1:after{ left:22px; top:100%; margin-top:-7px; }
+
+      .c2{ right:34px; top:78px; }
+      .c2:after{ right:22px; top:100%; margin-top:-7px; }
+
+      .c3{ right:34px; bottom:96px; }
+      .c3:after{ right:22px; top:-7px; transform:rotate(225deg); }
+
+      .features{
+        display:flex;
+        gap:14px;
+        flex-wrap:wrap;
+        margin-top:26px;
+      }
+
+      .chip{
+        padding:12px 16px;
+        border-radius:999px;
+        color:#fff;
+        font-weight:900;
+        font-size:22px;
+        box-shadow:var(--shadow2);
+      }
+
+      .chip.p{ background:linear-gradient(135deg, #4f46e5, #7c3aed); }
+      .chip.c{ background:linear-gradient(135deg, #06b6d4, #0ea5e9); }
+      .chip.g{ background:linear-gradient(135deg, #10b981, #059669); }
+
+      .foot{
+        position:absolute;
+        left:58px;
+        right:58px;
+        bottom:36px;
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        color:var(--muted2);
+        font-size:18px;
+      }
+
+      .brand{
+        font-weight:900;
+        color:rgba(15,23,42,.80);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <div class="top">
+        <div class="pill">BookMarkMap v1 · Built with vibecoding</div>
+        <div class="right-pills">
+          <div class="pill gray">Chrome 插件</div>
+          <div class="pill gray">Local-first</div>
+        </div>
+      </div>
+
+      <h1>书签不再吃灰</h1>
+      <p class="sub">一键整理 + AI 语义检索：把你的 Chrome 书签变成可管理的知识库。</p>
+
+      <div class="shot-wrap">
+        <div class="shot">
+          <div class="shot-media">
+            <img src="../../bookmarkmap首页展示.png" alt="BookMarkMap 首页展示" />
+            <div class="demo-tree" aria-label="示例书签文件夹（已脱敏）">
+              <ul>
+                <li><span class="caret"></span><span class="icon">📌</span><span class="name">Start / 快速入口</span></li>
+                <li><span class="caret">›</span><span class="icon">📁</span><span class="name">开发 / Dev</span><span class="count">(17)</span></li>
+                <li><span class="caret">›</span><span class="icon">📁</span><span class="name">AI / LLM</span><span class="count">(84)</span></li>
+                <li><span class="caret">›</span><span class="icon">📁</span><span class="name">在线工具合集</span><span class="count">(26)</span></li>
+                <li><span class="caret">›</span><span class="icon">📁</span><span class="name">常用网站</span><span class="count">(2)</span></li>
+                <li><span class="caret">›</span><span class="icon">📁</span><span class="name">工作资料</span><span class="count">(23)</span></li>
+                <li><span class="caret">›</span><span class="icon">📁</span><span class="name">产品 / Product</span><span class="count">(43)</span></li>
+                <li><span class="caret">›</span><span class="icon">📁</span><span class="name">学习笔记</span><span class="count">(5)</span></li>
+                <li><span class="caret">›</span><span class="icon">📁</span><span class="name">Apple / iOS</span><span class="count">(7)</span></li>
+                <li><span class="caret">›</span><span class="icon">📁</span><span class="name">面试题库</span><span class="count">(17)</span></li>
+                <li><span class="caret">›</span><span class="icon">📁</span><span class="name">工具箱</span><span class="count">(82)</span></li>
+                <li><span class="caret">›</span><span class="icon">📁</span><span class="name">资源库</span><span class="count">(15)</span></li>
+                <li><span class="caret">›</span><span class="icon">📁</span><span class="name">English</span><span class="count">(17)</span></li>
+                <li><span class="caret">›</span><span class="icon">📁</span><span class="name">阅读清单</span><span class="count">(19)</span></li>
+                <li><span class="caret">›</span><span class="icon">📁</span><span class="name">待办 / TODO</span><span class="count">(5)</span></li>
+                <li><span class="caret">›</span><span class="icon">📁</span><span class="name">Read Later</span><span class="count">(17)</span></li>
+                <li><span class="caret"></span><span class="icon">📌</span><span class="name">Calendar</span></li>
+                <li><span class="caret"></span><span class="icon">📌</span><span class="name">Templates</span></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="callout c1">全量书签一屏看清</div>
+        <div class="callout c2">本地/AI 搜索切换</div>
+        <div class="callout c3">右键操作：移动/重命名</div>
+      </div>
+
+      <div class="features">
+        <div class="chip p">思维导图</div>
+        <div class="chip c">AI 语义检索</div>
+        <div class="chip g">失效检测</div>
+      </div>
+
+      <div class="foot">
+        <span>适合：资料党 / 学习党 / 收藏重度用户</span>
+        <span class="brand">BookMarkMap</span>
+      </div>
+    </div>
+  </body>
+</html>

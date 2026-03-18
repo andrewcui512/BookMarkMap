@@ -4,6 +4,7 @@
 
 import { useI18n } from '@/hooks/useI18n';
 import type { SearchResult } from '@/types/bookmark';
+import { getTagDisplayLabel, isSystemTag, sortTagsForDisplay } from '@/lib/tags';
 import './AiSearchResults.css';
 
 interface AiSearchResultsProps {
@@ -11,9 +12,10 @@ interface AiSearchResultsProps {
     onOpen: (result: SearchResult) => void;
     onContextMenu?: (e: React.MouseEvent, result: SearchResult) => void;
     cached?: boolean;
+    getTags?: (bookmarkId: string) => string[];
 }
 
-export function AiSearchResults({ results, onOpen, onContextMenu, cached }: AiSearchResultsProps) {
+export function AiSearchResults({ results, onOpen, onContextMenu, cached, getTags }: AiSearchResultsProps) {
     const { t } = useI18n();
 
     if (results.length === 0) {
@@ -46,6 +48,27 @@ export function AiSearchResults({ results, onOpen, onContextMenu, cached }: AiSe
                         </span>
                     </div>
                     <div className="ai-search-result-url">{result.url}</div>
+                    {getTags ? (
+                        (() => {
+                            const tags = sortTagsForDisplay(getTags(result.id) || []);
+                            if (!tags.length) return null;
+                            const display = tags.map((x) => getTagDisplayLabel(x, t));
+                            const shown = tags.slice(0, 3);
+                            const more = Math.max(0, tags.length - shown.length);
+                            return (
+                                <div className="ai-search-result-tags" title={display.join(', ')}>
+                                    {shown.map((tag) => (
+                                        <span key={tag} className={`ai-tag-chip ${isSystemTag(tag) ? 'system' : ''}`}>
+                                            {getTagDisplayLabel(tag, t)}
+                                        </span>
+                                    ))}
+                                    {more > 0 ? (
+                                        <span className="ai-tag-more">+{more}</span>
+                                    ) : null}
+                                </div>
+                            );
+                        })()
+                    ) : null}
                     {result.reason && (
                         <div className="ai-search-result-reason">
                             💡 {result.reason}

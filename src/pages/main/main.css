@@ -90,10 +90,13 @@
 .main-search {
     flex: 1;
     max-width: 400px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .main-search input {
-    width: 100%;
+    flex: 1;
     padding: 8px 14px;
     border: 1px solid var(--border-color);
     border-radius: var(--radius-lg);
@@ -107,6 +110,19 @@
     outline: none;
     border-color: var(--primary-color);
     box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.search-controls {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.search-meta {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    white-space: nowrap;
 }
 
 .main-content {

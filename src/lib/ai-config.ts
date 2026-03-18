@@ -108,6 +108,30 @@ export function normalizeAiConfigs(settings: Settings): Settings {
     // Ensure every config has stats
     settings.aiConfigs.forEach(ensureConfigStats);
 
+    // Ensure at least one config exists so the settings UI can persist edits.
+    // (Fresh installs used to have empty `aiConfigs`, which made "Test connection"
+    // always fail with "AI not configured".)
+    if (settings.aiConfigs.length === 0) {
+        const id = randomId();
+        settings.aiConfigs.push({
+            id,
+            label: '默认',
+            providerId: 'custom',
+            apiEndpoint: '',
+            apiKey: '',
+            model: 'gpt-3.5-turbo',
+            stats: {
+                totalRequests: 0,
+                totalPromptTokens: 0,
+                totalCompletionTokens: 0,
+                totalTokens: 0,
+                lastUsed: null,
+                history: [],
+            },
+        });
+        settings.activeAiConfigId = id;
+    }
+
     // Validate activeAiConfigId
     if (
         settings.activeAiConfigId &&

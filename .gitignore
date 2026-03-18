@@ -14,6 +14,7 @@ dist/
 bookmark-map-*.zip
 bookmark-map-*.zip.sha256
 *.sha256
+bookmark-map.zip
 
 # Env files
 .env
@@ -40,3 +41,6 @@ bookmark-map-*.zip.sha256
 # Debug files
 debug.tsx
 debug.ts
+
+# Planning / meta
+.planning/

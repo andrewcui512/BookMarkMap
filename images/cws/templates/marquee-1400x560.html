@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BookMarkMap · Marquee 1400×560</title>
+    <style>
+      html,body{width:1400px;height:560px;margin:0;overflow:hidden;}
+      body{
+        background:
+          radial-gradient(900px 520px at 16% 24%, rgba(79,70,229,.22), transparent 62%),
+          radial-gradient(760px 480px at 86% 22%, rgba(6,182,212,.18), transparent 62%),
+          linear-gradient(135deg, #f8fafc, #eef2ff);
+        font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Helvetica,Arial,"Arial Unicode MS","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+        position:relative;
+      }
+      .left{
+        position:absolute;
+        left:58px;
+        top:78px;
+        width:520px;
+      }
+      .pill{
+        display:inline-flex;
+        align-items:center;
+        gap:10px;
+        padding:10px 14px;
+        border-radius:999px;
+        background:rgba(255,255,255,.74);
+        border:1px solid rgba(79,70,229,.26);
+        color:#4f46e5;
+        font-weight:900;
+        font-size:14px;
+        letter-spacing:.2px;
+        backdrop-filter: blur(10px);
+      }
+      h1{
+        margin:14px 0 10px;
+        font-size:56px;
+        line-height:1.06;
+        letter-spacing:-.8px;
+        color:#0f172a;
+      }
+      p{
+        margin:0;
+        font-size:20px;
+        color:#334155;
+        line-height:1.35;
+        font-weight:700;
+      }
+      .chips{display:flex;gap:12px;flex-wrap:wrap;margin-top:16px;}
+      .chip{
+        font-size:14px;
+        color:#fff;
+        font-weight:900;
+        padding:10px 14px;
+        border-radius:999px;
+        box-shadow:0 12px 28px rgba(2,6,23,.12);
+      }
+      .chip.p{background:linear-gradient(135deg,#4f46e5,#7c3aed);}
+      .chip.c{background:linear-gradient(135deg,#06b6d4,#0ea5e9);}
+      .chip.g{background:linear-gradient(135deg,#10b981,#059669);}
+
+      .shot{
+        position:absolute;
+        right:48px;
+        top:58px;
+        width:770px;
+        height:444px;
+        border-radius:20px;
+        overflow:hidden;
+        background:#fff;
+        border:1px solid rgba(15,23,42,.10);
+        box-shadow:0 22px 70px rgba(2,6,23,.14);
+      }
+      .shot img{
+        width:100%;
+        height:100%;
+        object-fit:cover;
+        object-position:center;
+        display:block;
+      }
+      .demo-tree{
+        left:12%;
+        top:14%;
+        width:42%;
+        height:70%;
+        border-radius:12px;
+        padding:10px 10px 10px 12px;
+      }
+    </style>
+    <link rel="stylesheet" href="./_base.css" />
+  </head>
+  <body>
+    <div class="left">
+      <div class="pill">BookMarkMap v1 · Built with vibecoding</div>
+      <h1>Bookmark Intelligence</h1>
+      <p>Tree view + Mind map + AI search for your Chrome bookmarks. Local-first, optional permissions.</p>
+      <div class="chips">
+        <span class="chip p">Mind Map</span>
+        <span class="chip c">AI Search</span>
+        <span class="chip g">Link Check</span>
+      </div>
+    </div>
+
+    <div class="shot">
+      <img src="../../bookmarkmap首页展示.png" alt="BookMarkMap preview" />
+      <div class="demo-tree" aria-label="示例书签文件夹（已脱敏）">
+        <ul>
+          <li><span class="caret"></span><span class="icon">📌</span><span class="name">Start</span></li>
+          <li><span class="caret">›</span><span class="icon">📁</span><span class="name">Dev</span><span class="count">(17)</span></li>
+          <li><span class="caret">›</span><span class="icon">📁</span><span class="name">AI</span><span class="count">(84)</span></li>
+          <li><span class="caret">›</span><span class="icon">📁</span><span class="name">Tools</span><span class="count">(26)</span></li>
+          <li><span class="caret">›</span><span class="icon">📁</span><span class="name">Work</span><span class="count">(23)</span></li>
+          <li><span class="caret">›</span><span class="icon">📁</span><span class="name">Reading</span><span class="count">(19)</span></li>
+        </ul>
+      </div>
+    </div>
+  </body>
+</html>
+

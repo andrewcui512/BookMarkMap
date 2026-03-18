@@ -1,6 +1,6 @@
 # BookMarkMap
 
-Chrome 书签管理扩展：树状管理、失效链接检测、AI 智能分类、思维导图拖拽重组。
+Chrome 书签管理扩展：树状管理、失效链接检测、AI 智能搜索、思维导图拖拽重组。
 
 - 项目主页：请查看仓库 `README.md`
 - 使用指南：`user_guide.md`

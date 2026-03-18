@@ -4,6 +4,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import type { BookmarkNode, AiSearchResponse, SearchResult } from '@/types/bookmark';
+import { parseSearchQuery, resolveTagAlias, SYSTEM_TAG_INVALID } from '@/lib/tags';
 
 interface UseAiSearchOptions {
     enabled: boolean;  // AI search enabled/disabled
@@ -22,7 +23,7 @@ interface UseAiSearchReturn {
     cached: boolean;
 
     // Actions
-    search: (query: string, bookmarks: BookmarkNode[]) => Promise<void>;
+    search: (query: string, bookmarks: BookmarkNode[], options?: { getTags?: (bookmarkId: string) => string[] }) => Promise<void>;
     clear: () => void;
 }
 
@@ -48,7 +49,7 @@ export function useAiSearch(options: UseAiSearchOptions): UseAiSearchReturn {
         localStorage.setItem('aiSearchEnabled', String(aiSearchEnabled));
     }, [aiSearchEnabled]);
 
-    const search = useCallback(async (query: string, bookmarks: BookmarkNode[]) => {
+    const search = useCallback(async (query: string, bookmarks: BookmarkNode[], opts?: { getTags?: (bookmarkId: string) => string[] }) => {
         // Clear previous timer
         if (debounceTimerRef.current) {
             clearTimeout(debounceTimerRef.current);
@@ -60,6 +61,18 @@ export function useAiSearch(options: UseAiSearchOptions): UseAiSearchReturn {
         }
 
         const trimmedQuery = query.trim();
+        const parsed = parseSearchQuery(trimmedQuery);
+        let queryText = parsed.textQuery.trim();
+        let tagFilters = parsed.tagFilters;
+
+        // Support implicit system tag queries like "失效" / "invalid" (without #tag:).
+        if (tagFilters.length === 0 && queryText) {
+            const implicit = resolveTagAlias(queryText);
+            if (implicit === SYSTEM_TAG_INVALID || queryText.toLowerCase() === 'invalid' || queryText === '失效') {
+                tagFilters = [SYSTEM_TAG_INVALID];
+                queryText = '';
+            }
+        }
 
         if (!trimmedQuery) {
             setResults([]);
@@ -81,11 +94,36 @@ export function useAiSearch(options: UseAiSearchOptions): UseAiSearchReturn {
             abortControllerRef.current = controller;
 
             try {
-                // Flatten bookmarks
-                const flatBookmarks = flattenBookmarks(bookmarks);
+                const getTags = opts?.getTags;
 
-                if (flatBookmarks.length === 0) {
-                    setResults([]);
+                // If query is tags-only, skip AI and return local results deterministically.
+                if (!queryText && tagFilters.length > 0) {
+                    const flatBookmarks = flattenBookmarks(bookmarks);
+                    if (flatBookmarks.length === 0) {
+                        setResults([]);
+                        setSearching(false);
+                        return;
+                    }
+
+                    // Apply tag filters deterministically (AND semantics).
+                    const candidates = flatBookmarks.filter((b) => {
+                        const tags = getTags ? (getTags(b.id) || []) : [];
+                        return tagFilters.every((tf) => tags.includes(tf));
+                    });
+
+                    const results: SearchResult[] = candidates
+                        .filter((b) => Boolean(b.url))
+                        .slice(0, maxResults)
+                        .map((b) => ({
+                            id: b.id,
+                            title: b.title,
+                            url: b.url || '',
+                            relevanceScore: 100,
+                            reason: tagFilters.includes(SYSTEM_TAG_INVALID) ? 'tag:invalid' : 'tag match',
+                        }));
+                    setResults(results);
+                    setCached(false);
+                    setError(null);
                     setSearching(false);
                     return;
                 }
@@ -93,13 +131,8 @@ export function useAiSearch(options: UseAiSearchOptions): UseAiSearchReturn {
                 // Call background worker
                 const response = await chrome.runtime.sendMessage({
                     type: 'AI_SEARCH_BOOKMARKS',
-                    query: trimmedQuery,
-                    bookmarks: flatBookmarks.map(b => ({
-                        id: b.id,
-                        title: b.title,
-                        url: b.url || '',
-                        dateAdded: b.dateAdded,
-                    })),
+                    query: queryText || trimmedQuery,
+                    tagFilters,
                     maxResults,
                 }) as AiSearchResponse;
 

@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BookMarkMap · AI Search (CWS)</title>
+    <link rel="stylesheet" href="./_base.css" />
+    <style>
+      html,body{width:1280px;height:800px;}
+      .bg{
+        background:
+          radial-gradient(900px 460px at 14% 8%, rgba(6,182,212,.18), transparent 60%),
+          radial-gradient(740px 420px at 92% 18%, rgba(79,70,229,.14), transparent 62%),
+          linear-gradient(135deg, var(--bg0), #ecfeff);
+      }
+      .pill{ border-color: rgba(6,182,212,.28); color: rgba(6,182,212,1); }
+    </style>
+  </head>
+  <body>
+    <div class="bg">
+      <div class="wrap">
+        <div class="header">
+          <div>
+            <div class="pill">AI Search · Kimi / OpenAI compatible</div>
+            <div class="title">一句话找书签</div>
+            <p class="subtitle">语义检索返回相关度评分与理由；支持“更全召回”（分块扫描）。</p>
+          </div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end;">
+            <div class="pill gray">Optional host permissions</div>
+            <div class="pill gray">Privacy-first</div>
+          </div>
+        </div>
+
+        <div class="shot" aria-label="AI 搜索截图（演示数据脱敏）">
+          <img src="../../bookmarkmap首页ai搜索结果展示.png" alt="BookMarkMap AI 搜索" />
+          <div class="demo-ai" aria-label="示例 AI 搜索结果（已脱敏）">
+            <div class="row"><div class="text">RAG 入门：从检索到生成的完整链路（Demo）</div><div class="score">100</div></div>
+            <div class="row"><div class="text">LangChain / LlamaIndex 对比：选型与实践（Demo）</div><div class="score">95</div></div>
+            <div class="row"><div class="text">向量数据库入门：Milvus / Qdrant / pgvector（Demo）</div><div class="score">92</div></div>
+            <div class="row"><div class="text">Prompt Engineering：可复用的提示词结构（Demo）</div><div class="score">90</div></div>
+            <div class="row"><div class="text">多 Agent 系统：规划、记忆与工具调用（Demo）</div><div class="score">88</div></div>
+            <div class="row"><div class="text">Embedding 选型：维度、召回与成本权衡（Demo）</div><div class="score">86</div></div>
+            <div class="row"><div class="text">离线知识库：从书签到个人知识库（Demo）</div><div class="score">84</div></div>
+            <div class="row"><div class="text">隐私优先：本地存储与按需权限设计（Demo）</div><div class="score">82</div></div>
+          </div>
+        </div>
+
+        <div class="footer">
+          <span>截图为演示数据（已脱敏），不代表真实收藏内容</span>
+          <span class="brand">BookMarkMap</span>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

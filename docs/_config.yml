@@ -1,4 +1,5 @@
 title: BookMarkMap
 description: Chrome bookmark manager extension
 theme: minima
-
+url: "https://andrewcui512.github.io"
+baseurl: "/BookMarkMap"

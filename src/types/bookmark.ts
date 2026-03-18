@@ -69,6 +69,8 @@ export interface SearchBookmarkInput {
     title: string;
     url: string;
     dateAdded?: number;
+    /** Local-only plugin metadata (chrome.storage.local). Not part of Chrome bookmarks. */
+    tags?: string[];
 }
 
 export interface SearchResult {

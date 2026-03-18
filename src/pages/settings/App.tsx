@@ -6,9 +6,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSettings } from '@/hooks/useSettings';
 import { useI18n } from '@/hooks/useI18n';
 import { ToastContainer, useToast } from '@/components/Toast';
-import { callBackground } from '@/lib/utils';
+import { callBackground, randomId } from '@/lib/utils';
 import { ensureOriginsPermission, urlToOriginPattern } from '@/lib/permissions';
 import { applyThemeMode, normalizeThemeMode } from '@/lib/theme';
+import type { AiConfig } from '@/types/bookmark';
 import './settings.css';
 
 export default function App() {
@@ -66,14 +67,50 @@ export default function App() {
     const handleTest = async () => {
         setTesting(true);
         try {
-            const active = settings?.aiConfigs?.find(c => c.id === settings.activeAiConfigId);
-            const endpoint = active?.apiEndpoint || apiEndpoint;
+            if (!settings) return;
+
+            // Persist the current inputs into the active config before testing,
+            // so "Test connection" works without requiring a separate "Save".
+            const updated = { ...settings };
+            updated.aiConfigs = Array.isArray(updated.aiConfigs) ? [...updated.aiConfigs] : [];
+
+            let active = updated.aiConfigs.find((c) => c.id === updated.activeAiConfigId);
+            if (!active) {
+                const id = randomId();
+                const created: AiConfig = {
+                    id,
+                    label: '默认',
+                    providerId: 'custom',
+                    apiEndpoint: '',
+                    apiKey: '',
+                    model: 'gpt-3.5-turbo',
+                    stats: {
+                        totalRequests: 0,
+                        totalPromptTokens: 0,
+                        totalCompletionTokens: 0,
+                        totalTokens: 0,
+                        lastUsed: null,
+                        history: [],
+                    },
+                };
+                updated.aiConfigs.push(created);
+                updated.activeAiConfigId = id;
+                active = created;
+            }
+
+            active.apiEndpoint = apiEndpoint;
+            active.apiKey = apiKey;
+            active.model = model;
+
+            await save(updated);
+
+            const endpoint = active.apiEndpoint || apiEndpoint;
             const origin = endpoint ? urlToOriginPattern(endpoint) : null;
             if (!origin) throw new Error(t('apiEndpointInvalid'));
             const granted = await ensureOriginsPermission([origin]);
             if (!granted) throw new Error(t('apiPermissionRequired'));
 
-            let result = await callBackground<any>({ type: 'TEST_AI_CONNECTION' });
+            let result = await callBackground<any>({ type: 'TEST_AI_CONNECTION', configId: updated.activeAiConfigId });
             if (result?.error && /unknown message type/i.test(String(result.error || ''))) {
                 result = await callBackground<any>({ type: 'AI_TEST' });
             }
@@ -169,6 +206,12 @@ export default function App() {
                         <li>{t('privacyAiData')}</li>
                         <li>{t('privacyLinkCheck')}</li>
                     </ul>
+                </section>
+
+                {/* Tags */}
+                <section className="settings-section card">
+                    <h2>🏷️ {t('tags')}</h2>
+                    <p className="settings-hint">{t('tagsLocalOnlyDesc')}</p>
                 </section>
 
                 {/* Save */}

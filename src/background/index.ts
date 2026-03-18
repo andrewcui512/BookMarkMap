@@ -6,7 +6,9 @@
 import { getNormalizedSettings, getAiConfigByIdOrActive, assertAiConfigReady, updateAiConfigStats, pushHistory, getDefaultSettings } from '@/lib/ai-config';
 import { checkLink, checkLinks } from '@/lib/link-checker';
 import { searchBookmarksWithAi } from '@/background/ai-search';
+import { toChatCompletionsEndpoint } from '@/lib/ai-endpoint';
 import { now } from '@/lib/utils';
+import { removeTagsForIds, readTagsStore } from '@/lib/tags-storage';
 import type { AiConfig, AiConfigStats } from '@/types/bookmark';
 
 /* ────── Install / Update ────── */
@@ -37,12 +39,20 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
             return true;
 
         case 'AI_SEARCH_BOOKMARKS':
-            searchBookmarksWithAi(
-                message.query,
-                message.bookmarks,
-                message.configId,
-                message.maxResults
-            )
+            (async () => {
+                const query = String(message.query || '');
+                const maxResults = typeof message.maxResults === 'number' ? message.maxResults : undefined;
+                const configId = typeof message.configId === 'string' ? message.configId : undefined;
+                const tagFilters = Array.isArray(message.tagFilters) ? message.tagFilters.map(String).filter(Boolean) : [];
+                const scope = message.scope === 'recent' ? 'recent' : 'all';
+                const recentDays = typeof message.recentDays === 'number' && message.recentDays > 0 ? message.recentDays : 7;
+
+                const provided = Array.isArray(message.bookmarks) ? message.bookmarks : null;
+                const bookmarks = provided?.length ? provided : await collectBookmarksForAi({ scope, recentDays, tagFilters });
+                const contextKey = `scope=${scope};days=${recentDays};tags=${tagFilters.join(',')};n=${bookmarks.length}`;
+
+                return searchBookmarksWithAi(query, bookmarks, configId, maxResults, contextKey);
+            })()
                 .then((result) => sendResponse(result))
                 .catch((err) => sendResponse({ error: err.message }));
             return true;
@@ -70,6 +80,40 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     }
 });
 
+async function collectBookmarksForAi(options: { scope: 'all' | 'recent'; recentDays: number; tagFilters: string[] }) {
+    const tree = await chrome.bookmarks.getTree();
+    const tagsStore = await readTagsStore();
+    const tagsById = tagsStore.tagsById || {};
+
+    const cutoff = Date.now() - options.recentDays * 24 * 60 * 60 * 1000;
+    const results: Array<{ id: string; title: string; url: string; dateAdded?: number; tags?: string[] }> = [];
+
+    const traverse = (nodes: chrome.bookmarks.BookmarkTreeNode[] | undefined) => {
+        if (!nodes) return;
+        for (const n of nodes) {
+            if (n.url) {
+                if (options.scope === 'recent' && (n.dateAdded || 0) <= cutoff) {
+                    continue;
+                }
+                const tags = Array.isArray(tagsById[n.id]) ? tagsById[n.id] : [];
+                if (options.tagFilters.length > 0 && !options.tagFilters.every((tf) => tags.includes(tf))) {
+                    continue;
+                }
+                results.push({
+                    id: n.id,
+                    title: n.title || '',
+                    url: n.url,
+                    dateAdded: n.dateAdded,
+                    tags,
+                });
+            }
+            if (n.children && n.children.length) traverse(n.children);
+        }
+    };
+    traverse(tree);
+    return results;
+}
+
 /* ────── AI: Test connection ────── */
 
 async function testAiConnection(configId?: string) {
@@ -77,8 +121,9 @@ async function testAiConnection(configId?: string) {
     assertAiConfigReady(config);
 
     const startTime = Date.now();
+    const endpoint = toChatCompletionsEndpoint(config.apiEndpoint);
 
-    const response = await fetch(config.apiEndpoint, {
+    const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -134,8 +179,24 @@ chrome.bookmarks.onCreated.addListener((_id, bookmark) => {
     console.log('Bookmark created:', bookmark.title);
 });
 
-chrome.bookmarks.onRemoved.addListener((id) => {
+chrome.bookmarks.onRemoved.addListener((id, removeInfo) => {
     console.log('Bookmark removed:', id);
+    // Cleanup local-only tag metadata for removed nodes.
+    // removeInfo.node may contain a subtree when a folder is removed.
+    const handler = async (removeInfo?: chrome.bookmarks.BookmarkRemoveInfo) => {
+        const ids: string[] = [];
+        const collect = (n: chrome.bookmarks.BookmarkTreeNode | undefined) => {
+            if (!n) return;
+            ids.push(n.id);
+            n.children?.forEach((c) => collect(c));
+        };
+        collect(removeInfo?.node);
+        if (ids.length === 0) ids.push(id);
+        await removeTagsForIds(ids);
+    };
+    void handler(removeInfo).catch((err) => {
+        console.warn('[tags] cleanup failed', err);
+    });
 });
 
 chrome.bookmarks.onChanged.addListener((id, changeInfo) => {

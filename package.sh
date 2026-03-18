@@ -16,6 +16,10 @@ rm -f bookmark-map.zip
 echo "🔨 构建项目..."
 npm run build
 
+# 2.5 审核打包内容（基础合规检查）
+echo "🔍 审核打包内容..."
+bash scripts/audit-webstore-package.sh
+
 # 3. 检查构建结果
 if [ ! -d "dist" ]; then
     echo "❌ 构建失败：dist 目录不存在"

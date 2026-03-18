@@ -9,13 +9,16 @@ import { ToastContainer, useToast } from '@/components/Toast';
 import { Modal } from '@/components/Modal';
 import { SearchModeToggle } from '@/components/SearchModeToggle';
 import { AiSearchResults } from '@/components/AiSearchResults';
+import { TagEditor } from '@/components/Tags';
 import { useBookmarks } from '@/hooks/useBookmarks';
 import { useI18n } from '@/hooks/useI18n';
+import { useTags } from '@/hooks/useTags';
 import { useTheme } from '@/hooks/useTheme';
 import { useAiSearch } from '@/hooks/useAiSearch';
 import { checkLinks } from '@/lib/link-checker';
 import { ensureOriginsPermission, WEB_ACCESS_ORIGINS } from '@/lib/permissions';
 import * as bm from '@/lib/bookmark-manager';
+import { SYSTEM_TAG_INVALID, getTagDisplayLabel, parseSearchQuery, sortTagsForDisplay } from '@/lib/tags';
 import type { ContextMenuTarget } from '@/components/ContextMenu';
 import type { BookmarkNode, LinkCheckResult } from '@/types/bookmark';
 import './popup.css';
@@ -26,10 +29,12 @@ export default function App() {
     const { t } = useI18n();
     useTheme();
     const { bookmarks, loading, load, searchLocal, flatten, moveToInvalid } = useBookmarks();
+    const { ready: tagsReady, getTags, setTags, batchAddTag, allTags } = useTags();
     const { toasts, show: showToast } = useToast();
     const { expanded, toggle: onToggle } = useExpandedState('expandedNodes');
     const [searchQuery, setSearchQuery] = useState('');
     const [displayNodes, setDisplayNodes] = useState<any[]>([]);
+    const parsedSearch = useMemo(() => parseSearchQuery(searchQuery), [searchQuery]);
 
     // AI Search
     const aiSearch = useAiSearch({
@@ -46,6 +51,8 @@ export default function App() {
     const [linkCheckResults, setLinkCheckResults] = useState<LinkCheckResult[]>([]);
     const [linkChecking, setLinkChecking] = useState(false);
     const [linkCheckProgress, setLinkCheckProgress] = useState({ checked: 0, total: 0 });
+    const [tagEditOpen, setTagEditOpen] = useState(false);
+    const [tagEditTarget, setTagEditTarget] = useState<ContextMenuTarget | null>(null);
 
     useEffect(() => {
         load();
@@ -60,12 +67,12 @@ export default function App() {
 
         if (aiSearch.aiSearchEnabled) {
             // AI 搜索：不修改 displayNodes，使用 aiSearch.results
-            aiSearch.search(searchQuery, bookmarks);
+            aiSearch.search(searchQuery, bookmarks, { getTags });
         } else {
             // 传统搜索
-            setDisplayNodes(searchLocal(searchQuery));
+            setDisplayNodes(searchLocal(searchQuery, { getTags }));
         }
-    }, [bookmarks, searchQuery, searchLocal, aiSearch.aiSearchEnabled]);
+    }, [bookmarks, searchQuery, searchLocal, aiSearch.aiSearchEnabled, getTags]);
 
     const matchedBookmarkUrls = useMemo(() => {
         if (!searchQuery.trim()) return [];
@@ -128,6 +135,14 @@ export default function App() {
                     }
                     break;
                 }
+                case 'tags':
+                    if (!tagsReady) {
+                        showToast(t('loading') || '加载中', 'info');
+                        return;
+                    }
+                    setTagEditTarget(target);
+                    setTagEditOpen(true);
+                    break;
                 case 'move': {
                     setMoveTargetId(target.id);
                     setMoveOpen(true);
@@ -143,7 +158,7 @@ export default function App() {
                 }
             }
         },
-        [load, showToast, t]
+        [load, showToast, t, tagsReady]
     );
 
     const contextMenu = useContextMenu(handleContextAction);
@@ -152,6 +167,7 @@ export default function App() {
         { action: 'open', label: t('open'), icon: '🔗', hidden: target.isFolder },
         { action: 'copy', label: t('copyLink'), icon: '📋', hidden: target.isFolder },
         { action: 'rename', label: t('rename'), icon: '✏️', hidden: PROTECTED_NODE_IDS.has(target.id) },
+        { action: 'tags', label: t('tags'), icon: '🏷️' },
         { action: 'move', label: t('moveTo'), icon: '📂', hidden: PROTECTED_NODE_IDS.has(target.id) },
         { action: 'delete', label: t('delete'), icon: '🗑️', danger: true, hidden: PROTECTED_NODE_IDS.has(target.id) },
     ];
@@ -300,12 +316,13 @@ export default function App() {
                         results={aiSearch.results}
                         onOpen={(result) => chrome.tabs.create({ url: result.url })}
                         cached={aiSearch.cached}
+                        getTags={getTags}
                     />
                 ) : (
                     !loading && !isEmpty && !noResults && (
                         <TreeView
                             nodes={displayNodes as any}
-                            searchQuery={searchQuery}
+                            searchQuery={parsedSearch.textQuery}
                             expandedNodes={expanded}
                             onToggle={onToggle}
                             onContextMenu={(e, node) => {
@@ -323,6 +340,21 @@ export default function App() {
                             }}
                             onClick={(node) => {
                                 if (node.url) chrome.tabs.create({ url: node.url });
+                            }}
+                            getNodeClass={(node) => {
+                                const tags = getTags(node.id);
+                                return tags.includes(SYSTEM_TAG_INVALID) ? 'invalid' : undefined;
+                            }}
+                            renderRight={(node) => {
+                                const tags = getTags(node.id);
+                                if (!tags || tags.length === 0) return null;
+                                const hasInvalid = tags.includes(SYSTEM_TAG_INVALID);
+                                const title = sortTagsForDisplay(tags).map((t0) => getTagDisplayLabel(t0, t)).join(', ');
+                                return (
+                                    <span className={`badge ${hasInvalid ? 'badge-warning' : 'badge-info'}`} title={title}>
+                                        {hasInvalid ? `⚠️ ${t('tagInvalid')}` : `🏷️ ${tags.length}`}
+                                    </span>
+                                );
                             }}
                         />
                     )
@@ -350,6 +382,23 @@ export default function App() {
                 </select>
             </Modal>
 
+            <Modal
+                open={tagEditOpen}
+                onClose={() => { setTagEditOpen(false); setTagEditTarget(null); }}
+                title={`🏷️ ${t('editTags')}`}
+                width="520px"
+                footer={<button className="btn btn-primary" onClick={() => { setTagEditOpen(false); setTagEditTarget(null); }}>{t('close')}</button>}
+            >
+                <TagEditor
+                    value={tagEditTarget ? getTags(tagEditTarget.id) : []}
+                    suggestions={allTags}
+                    onChange={(next) => {
+                        if (!tagEditTarget) return;
+                        void setTags(tagEditTarget.id, next);
+                    }}
+                />
+            </Modal>
+
             <Modal open={linkCheckOpen} onClose={() => setLinkCheckOpen(false)} title={t('checkLinks')} width="520px">
                 {linkChecking ? (
                     <div className="link-check-progress">
@@ -374,14 +423,22 @@ export default function App() {
                             ))}
                         </div>
                         {invalidResults.length > 0 && (
-                            <button className="btn btn-primary" style={{ marginTop: 12, width: '100%' }} onClick={async () => {
-                                await moveToInvalid(invalidResults.map(r => r.id!));
-                                setLinkCheckOpen(false);
-                                load({ silent: true });
-                                showToast(t('movedToInvalid'), 'success');
-                            }}>
-                                📂 {t('moveToInvalid')}
-                            </button>
+                            <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                                <button className="btn" style={{ flex: 1 }} onClick={async () => {
+                                    await batchAddTag(invalidResults.map(r => r.id!), SYSTEM_TAG_INVALID);
+                                    showToast(t('taggedInvalid'), 'success');
+                                }}>
+                                    🏷️ {t('markInvalidTag')}
+                                </button>
+                                <button className="btn btn-primary" style={{ flex: 1 }} onClick={async () => {
+                                    await moveToInvalid(invalidResults.map(r => r.id!));
+                                    setLinkCheckOpen(false);
+                                    load({ silent: true });
+                                    showToast(t('movedToInvalid'), 'success');
+                                }}>
+                                    📂 {t('moveToInvalid')}
+                                </button>
+                            </div>
                         )}
                     </div>
                 )}

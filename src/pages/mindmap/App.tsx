@@ -12,6 +12,7 @@ import {
     useNodesState,
     useEdgesState,
     Panel,
+    PanOnScrollMode,
     type Node,
     type Edge,
     type NodeTypes,
@@ -22,10 +23,14 @@ import dagre from 'dagre';
 
 import { useBookmarks } from '@/hooks/useBookmarks';
 import { useI18n } from '@/hooks/useI18n';
+import { useTags } from '@/hooks/useTags';
 import { useTheme } from '@/hooks/useTheme';
 import { ToastContainer, useToast } from '@/components/Toast';
 import { ContextMenu, useContextMenu, type ContextMenuTarget } from '@/components/ContextMenu';
+import { Modal } from '@/components/Modal';
+import { TagEditor } from '@/components/Tags';
 import type { BookmarkNode } from '@/types/bookmark';
+import { SYSTEM_TAG_INVALID, parseSearchQuery, resolveTagAlias } from '@/lib/tags';
 import { BookmarkNodeComponent } from './BookmarkNode';
 import './mindmap.css';
 
@@ -46,6 +51,7 @@ export default function App() {
     const { t } = useI18n();
     useTheme();
     const { bookmarks, loading, load } = useBookmarks();
+    const { ready: tagsReady, getTags, setTags, allTags } = useTags();
     const { toasts, show: showToast } = useToast();
 
     const [nodes, setNodes, onNodesChange] = useNodesState([] as Node[]);
@@ -61,6 +67,9 @@ export default function App() {
     const pendingFitViewRef = useRef(false);
 
     const dropTargetIdRef = useRef<string | null>(null);
+
+    const [tagEditOpen, setTagEditOpen] = useState(false);
+    const [tagEditTarget, setTagEditTarget] = useState<ContextMenuTarget | null>(null);
 
     useEffect(() => { load(); }, [load]);
 
@@ -167,6 +176,12 @@ export default function App() {
             const flowNodes: Node[] = [];
             const flowEdges: Edge[] = [];
 
+            const hasQuery = Boolean(searchQuery.trim());
+            const parsed = parseSearchQuery(searchQuery);
+            const lowerTextQuery = parsed.textQuery.toLowerCase();
+            const tagFilters = parsed.tagFilters;
+            const resolvedTextAsTag = lowerTextQuery ? resolveTagAlias(lowerTextQuery) : null;
+
             const traverse = (node: BookmarkNode, parentId: string | null, currentDepth: number) => {
                 const isFolder = !node.url;
                 const childCount = node.children?.length || 0;
@@ -175,10 +190,17 @@ export default function App() {
                     ? (manualExpanded.has(node.id) ? false : manualCollapsed.has(node.id) ? true : defaultCollapsed)
                     : false;
                 const isProtected = PROTECTED_NODE_IDS.has(node.id);
-                const isSearchMatch = searchQuery
-                    ? node.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    node.url?.toLowerCase().includes(searchQuery.toLowerCase())
-                    : false;
+                const tags = getTags(node.id);
+                const tagFilterMatch = tagFilters.length === 0 || tagFilters.every((tf) => tags.includes(tf));
+                const titleMatch = lowerTextQuery ? node.title?.toLowerCase().includes(lowerTextQuery) : true;
+                const urlMatch = lowerTextQuery ? node.url?.toLowerCase().includes(lowerTextQuery) : true;
+                const tagsTextMatch = lowerTextQuery
+                    ? tags.some((x) => x.toLowerCase().includes(lowerTextQuery)) || (resolvedTextAsTag ? tags.includes(resolvedTextAsTag) : false)
+                    : true;
+                const textMatch = lowerTextQuery ? (titleMatch || urlMatch || tagsTextMatch) : true;
+                const isSearchMatch = hasQuery ? (tagFilterMatch && textMatch) : false;
+
+                const isInvalid = tags.includes(SYSTEM_TAG_INVALID);
 
                 flowNodes.push({
                     id: node.id,
@@ -194,6 +216,8 @@ export default function App() {
                         isCollapsed,
                         isSearchMatch,
                         isProtected,
+                        isInvalid,
+                        invalidLabel: t('tagInvalid'),
                         onToggle: () => {
                             if (!isFolder || childCount === 0) return;
                             setNodeCollapsed(node.id, !isCollapsed);
@@ -259,7 +283,7 @@ export default function App() {
 
             return { nodes: flowNodes, edges: flowEdges };
         },
-        [searchQuery, setNodeCollapsed]
+        [getTags, searchQuery, setNodeCollapsed, t]
     );
 
     const relayout = useCallback(() => {
@@ -320,6 +344,14 @@ export default function App() {
                         showToast(t('copied') || '已复制', 'success');
                     }
                     return;
+                case 'tags':
+                    if (!tagsReady) {
+                        showToast(t('loading') || '加载中', 'info');
+                        return;
+                    }
+                    setTagEditTarget(target);
+                    setTagEditOpen(true);
+                    return;
                 case 'toggle':
                     if (!reactFlowInstance) return;
                     {
@@ -355,7 +387,7 @@ export default function App() {
                     return;
             }
         },
-        [load, reactFlowInstance, setNodeCollapsed, showToast, t]
+        [load, reactFlowInstance, setNodeCollapsed, showToast, t, tagsReady]
     );
 
     const contextMenu = useContextMenu(handleContextAction);
@@ -364,6 +396,7 @@ export default function App() {
         (target: ContextMenuTarget, isCollapsed: boolean) => [
             { action: 'open', label: t('open') || '打开', icon: '🔗', hidden: target.isFolder },
             { action: 'copy', label: t('copyLink') || '复制链接', icon: '📋', hidden: target.isFolder },
+            { action: 'tags', label: t('tags') || '标签', icon: '🏷️' },
             {
                 action: 'toggle',
                 label: isCollapsed ? (t('expand') || '展开') : (t('collapse') || '收起'),
@@ -415,6 +448,10 @@ export default function App() {
                 fitView
                 minZoom={0.1}
                 maxZoom={2}
+                zoomOnScroll={false}
+                zoomOnPinch={true}
+                panOnScroll={true}
+                panOnScrollMode={PanOnScrollMode.Free}
                 defaultEdgeOptions={{ type: 'smoothstep' }}
                 onNodeContextMenu={(e, node) => {
                     const target: ContextMenuTarget = {
@@ -554,6 +591,23 @@ export default function App() {
                     <span>{t('loading') || '加载中...'}</span>
                 </div>
             )}
+
+            <Modal
+                open={tagEditOpen}
+                onClose={() => { setTagEditOpen(false); setTagEditTarget(null); }}
+                title={`🏷️ ${t('editTags')}`}
+                width="520px"
+                footer={<button className="btn btn-primary" onClick={() => { setTagEditOpen(false); setTagEditTarget(null); }}>{t('close')}</button>}
+            >
+                <TagEditor
+                    value={tagEditTarget ? getTags(tagEditTarget.id) : []}
+                    suggestions={allTags}
+                    onChange={(next) => {
+                        if (!tagEditTarget) return;
+                        void setTags(tagEditTarget.id, next);
+                    }}
+                />
+            </Modal>
 
             <ContextMenu state={contextMenu.state} onAction={contextMenu.handleAction} />
             <ToastContainer toasts={toasts} />

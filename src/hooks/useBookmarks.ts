@@ -32,9 +32,9 @@ export function useBookmarks() {
     }, []);
 
     const searchLocal = useCallback(
-        (query: string): BookmarkNode[] => {
+        (query: string, options?: { getTags?: (bookmarkId: string) => string[] }): BookmarkNode[] => {
             if (!query.trim()) return bookmarks as unknown as BookmarkNode[];
-            return bm.search(bookmarks as unknown as BookmarkNode[], query);
+            return bm.search(bookmarks as unknown as BookmarkNode[], query, options);
         },
         [bookmarks]
     );

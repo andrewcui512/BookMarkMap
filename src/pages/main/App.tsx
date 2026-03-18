@@ -3,37 +3,50 @@
  * Features: tree view with one-click expand/collapse all, search, context menu
  */
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { TreeView, useExpandedState } from '@/components/TreeView';
 import { ContextMenu, useContextMenu } from '@/components/ContextMenu';
 import { ToastContainer, useToast } from '@/components/Toast';
 import { Modal } from '@/components/Modal';
+import { TagEditor } from '@/components/Tags';
 import { useBookmarks } from '@/hooks/useBookmarks';
 import { useI18n } from '@/hooks/useI18n';
+import { useTags } from '@/hooks/useTags';
 import { useTheme } from '@/hooks/useTheme';
 import { checkLinks } from '@/lib/link-checker';
-import { ensureOriginsPermission, WEB_ACCESS_ORIGINS } from '@/lib/permissions';
+import { ensureOriginsPermission, WEB_ACCESS_ORIGINS, urlToOriginPattern } from '@/lib/permissions';
 import * as bm from '@/lib/bookmark-manager';
+import { SYSTEM_TAG_INVALID, getTagDisplayLabel, parseSearchQuery, sortTagsForDisplay } from '@/lib/tags';
+import { getAiConfigByIdOrActive, assertAiConfigReady } from '@/lib/ai-config';
+import { callBackground } from '@/lib/utils';
 import type { ContextMenuTarget } from '@/components/ContextMenu';
 import type { BookmarkNode, LinkCheckResult } from '@/types/bookmark';
 import './main.css';
 
 type ViewType = 'all' | 'recent';
 const PROTECTED_NODE_IDS = new Set(['0', '1', '2', '3']);
+type SearchMode = 'local' | 'ai';
 
 function isReadOnlyNodeId(id: string): boolean {
-    return PROTECTED_NODE_IDS.has(id) || id === 'recent-root';
+    return PROTECTED_NODE_IDS.has(id) || id === 'recent-root' || id === 'ai-search-root';
 }
 
 export default function App() {
     const { t } = useI18n();
     useTheme();
     const { bookmarks, loading, load, searchLocal, flatten, getRecentBookmarks, moveToInvalid } = useBookmarks();
+    const { ready: tagsReady, getTags, setTags, batchAddTag, allTags } = useTags();
     const { toasts, show: showToast } = useToast();
     const { expanded, toggle: onToggle } = useExpandedState('expandedNodesMain');
     const [view, setView] = useState<ViewType>('all');
     const [searchQuery, setSearchQuery] = useState('');
+    const [searchMode, setSearchMode] = useState<SearchMode>('local');
     const [displayNodes, setDisplayNodes] = useState<any[]>([]);
+    const parsedSearch = useMemo(() => parseSearchQuery(searchQuery), [searchQuery]);
+    const [aiSearching, setAiSearching] = useState(false);
+    const [aiMeta, setAiMeta] = useState<{ totalMatches: number; cached: boolean } | null>(null);
+    const aiRequestSeqRef = useRef(0);
+    const [debouncedQuery, setDebouncedQuery] = useState('');
 
     // Modals
     const [newFolderOpen, setNewFolderOpen] = useState(false);
@@ -46,6 +59,8 @@ export default function App() {
     const [linkCheckResults, setLinkCheckResults] = useState<LinkCheckResult[]>([]);
     const [linkChecking, setLinkChecking] = useState(false);
     const [linkCheckProgress, setLinkCheckProgress] = useState({ checked: 0, total: 0 });
+    const [tagEditOpen, setTagEditOpen] = useState(false);
+    const [tagEditTarget, setTagEditTarget] = useState<ContextMenuTarget | null>(null);
 
     useEffect(() => { load(); }, [load]);
 
@@ -64,8 +79,6 @@ export default function App() {
         return ids;
     }, [bookmarks]);
 
-    const allExpanded = allFolderIds.length > 0 && allFolderIds.every(id => expanded.has(id));
-
     // One-click expand all
     const expandAll = useCallback(() => {
         allFolderIds.forEach(id => {
@@ -80,26 +93,101 @@ export default function App() {
         });
     }, [allFolderIds, expanded, onToggle]);
 
-    // Toggle: if any collapsed → expand all; if all expanded → collapse all
-    const toggleExpandAll = useCallback(() => {
-        if (allExpanded) {
-            collapseAll();
-        } else {
-            expandAll();
-        }
-    }, [allExpanded, expandAll, collapseAll]);
-
-    // Update display based on view and search
     useEffect(() => {
+        const timer = setTimeout(() => setDebouncedQuery(searchQuery), 450);
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
+
+    // Update display based on view and search (local mode)
+    useEffect(() => {
+        if (searchMode !== 'local') return;
         let nodes: any[] = bookmarks;
         if (searchQuery.trim()) {
-            nodes = searchLocal(searchQuery);
+            nodes = searchLocal(searchQuery, { getTags });
+            setAiMeta(null);
         } else if (view === 'recent') {
             const recent = getRecentBookmarks(bookmarks as unknown as BookmarkNode[], 7);
             nodes = [{ id: 'recent-root', title: t('recentDays', '7'), children: recent }];
+            setAiMeta(null);
         }
         setDisplayNodes(nodes);
-    }, [bookmarks, searchQuery, view, searchLocal, getRecentBookmarks, t]);
+    }, [bookmarks, searchQuery, view, searchLocal, getRecentBookmarks, t, getTags, searchMode]);
+
+    // Update display based on view and search (AI mode)
+    useEffect(() => {
+        if (searchMode !== 'ai') return;
+
+        const q = debouncedQuery.trim();
+        if (!q) {
+            let nodes: any[] = bookmarks;
+            if (view === 'recent') {
+                const recent = getRecentBookmarks(bookmarks as unknown as BookmarkNode[], 7);
+                nodes = [{ id: 'recent-root', title: t('recentDays', '7'), children: recent }];
+            }
+            setDisplayNodes(nodes);
+            setAiMeta(null);
+            setAiSearching(false);
+            return;
+        }
+
+        const seq = ++aiRequestSeqRef.current;
+        setAiSearching(true);
+        setAiMeta(null);
+
+        void (async () => {
+            try {
+                const config = await getAiConfigByIdOrActive(null);
+                assertAiConfigReady(config);
+
+                const origin = urlToOriginPattern(config.apiEndpoint);
+                if (!origin) throw new Error(t('apiEndpointInvalid') || 'API endpoint invalid');
+                const granted = await ensureOriginsPermission([origin]);
+                if (!granted) throw new Error(t('apiPermissionRequired') || 'Permission required');
+
+                const parsed = parseSearchQuery(debouncedQuery);
+                if (!parsed.textQuery.trim() && parsed.tagFilters.length > 0) {
+                    // tags-only query: deterministic local results
+                    setDisplayNodes(searchLocal(debouncedQuery, { getTags }));
+                    setAiMeta(null);
+                    return;
+                }
+
+                const result = await callBackground<any>({
+                    type: 'AI_SEARCH_BOOKMARKS',
+                    query: parsed.textQuery.trim() || q,
+                    maxResults: 50,
+                    scope: view === 'recent' ? 'recent' : 'all',
+                    recentDays: 7,
+                    tagFilters: parsed.tagFilters,
+                });
+                if (seq !== aiRequestSeqRef.current) return;
+                if (result?.error) throw new Error(String(result.error));
+
+                const results = Array.isArray(result?.results) ? result.results : [];
+                setAiMeta({
+                    totalMatches: Number(result?.totalMatches ?? results.length),
+                    cached: Boolean(result?.cached),
+                });
+
+                const nodes = results.map((r: any) => ({
+                    id: String(r.id),
+                    title: String(r.title || ''),
+                    url: String(r.url || ''),
+                    aiScore: Number(r.relevanceScore || 0),
+                    aiReason: typeof r.reason === 'string' ? r.reason : '',
+                }));
+
+                setDisplayNodes(nodes);
+            } catch (err) {
+                if (seq !== aiRequestSeqRef.current) return;
+                setDisplayNodes([]);
+                setAiMeta(null);
+                showToast((err as Error).message || 'AI search failed', 'error');
+            } finally {
+                if (seq === aiRequestSeqRef.current) setAiSearching(false);
+            }
+        })();
+    }, [bookmarks, debouncedQuery, ensureOriginsPermission, getRecentBookmarks, getTags, searchLocal, searchMode, showToast, t, view]);
 
     // Context menu
     const handleContextAction = useCallback(async (action: string, target: ContextMenuTarget) => {
@@ -127,6 +215,14 @@ export default function App() {
                 }
                 break;
             }
+            case 'tags':
+                if (!tagsReady) {
+                    showToast(t('loading') || '加载中', 'info');
+                    return;
+                }
+                setTagEditTarget(target);
+                setTagEditOpen(true);
+                break;
             case 'move':
                 setMoveTargetId(target.id);
                 setMoveOpen(true);
@@ -140,13 +236,14 @@ export default function App() {
                 break;
             }
         }
-    }, [load, showToast, t]);
+    }, [load, showToast, t, tagsReady]);
 
     const contextMenu = useContextMenu(handleContextAction);
     const menuItems = (target: ContextMenuTarget) => [
         { action: 'open', label: t('open'), icon: '🔗', hidden: target.isFolder },
         { action: 'copy', label: t('copyLink'), icon: '📋', hidden: target.isFolder },
         { action: 'rename', label: t('rename'), icon: '✏️', hidden: isReadOnlyNodeId(target.id) },
+        { action: 'tags', label: t('tags'), icon: '🏷️', hidden: target.id === 'recent-root' },
         { action: 'move', label: t('moveTo'), icon: '📂', hidden: isReadOnlyNodeId(target.id) },
         { action: 'delete', label: t('delete'), icon: '🗑️', danger: true, hidden: isReadOnlyNodeId(target.id) },
     ];
@@ -269,17 +366,6 @@ export default function App() {
 
                     {/* Tree controls */}
                     <div className="tree-controls">
-                        <button
-                            className={`tree-toggle-btn ${allExpanded ? 'expanded' : ''}`}
-                            onClick={toggleExpandAll}
-                            title={allExpanded ? t('collapseAllNodes') : t('expandAllNodes')}
-                        >
-                            {allExpanded ? (
-                                <><span className="tree-toggle-icon">⊟</span> {t('collapseAll')}</>
-                            ) : (
-                                <><span className="tree-toggle-icon">⊞</span> {t('expandAll')}</>
-                            )}
-                        </button>
                         <button className="tree-toggle-btn" onClick={expandAll} title={t('expandAllNodes')}>
                             <span className="tree-toggle-icon">📂</span> {t('expandAll')}
                         </button>
@@ -291,22 +377,48 @@ export default function App() {
                     <div className="main-search">
                         <input
                             type="text"
-                            placeholder={t('searchPlaceholder')}
+                            placeholder={searchMode === 'ai' ? 'AI 搜索（支持自然语言）' : t('searchPlaceholder')}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
+                        <div className="search-controls">
+                            <button
+                                className={`tree-toggle-btn ${searchMode === 'local' ? 'expanded' : ''}`}
+                                onClick={() => setSearchMode('local')}
+                                title="本地搜索"
+                                type="button"
+                            >
+                                🔎 本地
+                            </button>
+                            <button
+                                className={`tree-toggle-btn ${searchMode === 'ai' ? 'expanded' : ''}`}
+                                onClick={() => setSearchMode('ai')}
+                                title="AI 搜索"
+                                type="button"
+                            >
+                                {aiSearching ? '⏳ AI' : '🤖 AI'}
+                            </button>
+                        </div>
+                        {searchMode === 'ai' && debouncedQuery.trim() && !aiSearching && aiMeta ? (
+                            <span className="search-meta" title={aiMeta.cached ? 'cached' : undefined}>
+                                {aiMeta.totalMatches} {t('results') || 'results'}{aiMeta.cached ? ' · cached' : ''}
+                            </span>
+                        ) : null}
                     </div>
                 </header>
 
                 <div className="main-content">
-                    {loading ? (
-                        <div className="state-container"><div className="spinner" /><div className="state-text">{t('loading')}</div></div>
+                    {loading || aiSearching ? (
+                        <div className="state-container">
+                            <div className="spinner" />
+                            <div className="state-text">{loading ? t('loading') : 'AI 搜索中...'}</div>
+                        </div>
                     ) : displayNodes.length === 0 ? (
                         <div className="state-container"><div className="state-icon">📭</div><div className="state-text">{searchQuery ? t('noResults') : t('noBookmarks')}</div></div>
                     ) : (
                         <TreeView
                             nodes={displayNodes as any}
-                            searchQuery={searchQuery}
+                            searchQuery={parsedSearch.textQuery}
                             expandedNodes={expanded}
                             onToggle={onToggle}
                             onContextMenu={(e, node) => {
@@ -314,6 +426,30 @@ export default function App() {
                                 contextMenu.show(e, target, menuItems(target));
                             }}
                             onClick={(node) => { if (node.url) chrome.tabs.create({ url: node.url }); }}
+                            getNodeClass={(node) => {
+                                const tags = getTags(node.id);
+                                return tags.includes(SYSTEM_TAG_INVALID) ? 'invalid' : undefined;
+                            }}
+                            renderRight={(node) => {
+                                if (searchMode === 'ai' && node.url && typeof (node as any).aiScore === 'number') {
+                                    const score = Math.round((node as any).aiScore);
+                                    const reason = String((node as any).aiReason || '').trim();
+                                    return (
+                                        <span className="badge badge-info" title={reason || undefined}>
+                                            🤖 {score}
+                                        </span>
+                                    );
+                                }
+                                const tags = getTags(node.id);
+                                if (!tags || tags.length === 0) return null;
+                                const hasInvalid = tags.includes(SYSTEM_TAG_INVALID);
+                                const title = sortTagsForDisplay(tags).map((t0) => getTagDisplayLabel(t0, t)).join(', ');
+                                return (
+                                    <span className={`badge ${hasInvalid ? 'badge-warning' : 'badge-info'}`} title={title}>
+                                        {hasInvalid ? `⚠️ ${t('tagInvalid')}` : `🏷️ ${tags.length}`}
+                                    </span>
+                                );
+                            }}
                         />
                     )}
                 </div>
@@ -335,6 +471,23 @@ export default function App() {
                 <select value={moveTargetFolder} onChange={(e) => setMoveTargetFolder(e.target.value)} style={{ width: '100%' }}>
                     {folderOptions.map(f => <option key={f.id} value={f.id}>{'　'.repeat(f.depth)}{f.title}</option>)}
                 </select>
+            </Modal>
+
+            <Modal
+                open={tagEditOpen}
+                onClose={() => { setTagEditOpen(false); setTagEditTarget(null); }}
+                title={`🏷️ ${t('editTags')}`}
+                width="520px"
+                footer={<button className="btn btn-primary" onClick={() => { setTagEditOpen(false); setTagEditTarget(null); }}>{t('close')}</button>}
+            >
+                <TagEditor
+                    value={tagEditTarget ? getTags(tagEditTarget.id) : []}
+                    suggestions={allTags}
+                    onChange={(next) => {
+                        if (!tagEditTarget) return;
+                        void setTags(tagEditTarget.id, next);
+                    }}
+                />
             </Modal>
 
             <Modal open={linkCheckOpen} onClose={() => setLinkCheckOpen(false)} title={t('checkLinks')} width="600px">
@@ -361,14 +514,22 @@ export default function App() {
                             ))}
                         </div>
                         {invalidResults.length > 0 && (
-                            <button className="btn btn-primary" style={{ marginTop: 12 }} onClick={async () => {
-                                await moveToInvalid(invalidResults.map(r => r.id!));
-                                setLinkCheckOpen(false);
-                                load({ silent: true });
-                                showToast(t('movedToInvalid'), 'success');
-                            }}>
-                                📂 {t('moveToInvalid')}
-                            </button>
+                            <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                                <button className="btn" style={{ flex: 1 }} onClick={async () => {
+                                    await batchAddTag(invalidResults.map(r => r.id!), SYSTEM_TAG_INVALID);
+                                    showToast(t('taggedInvalid'), 'success');
+                                }}>
+                                    🏷️ {t('markInvalidTag')}
+                                </button>
+                                <button className="btn btn-primary" style={{ flex: 1 }} onClick={async () => {
+                                    await moveToInvalid(invalidResults.map(r => r.id!));
+                                    setLinkCheckOpen(false);
+                                    load({ silent: true });
+                                    showToast(t('movedToInvalid'), 'success');
+                                }}>
+                                    📂 {t('moveToInvalid')}
+                                </button>
+                            </div>
                         )}
                     </div>
                 )}

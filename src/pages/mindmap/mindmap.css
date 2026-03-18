@@ -126,6 +126,14 @@
     box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15), var(--shadow-md);
 }
 
+.mindmap-node.invalid {
+    opacity: 0.65;
+}
+
+.mindmap-node.invalid .mindmap-node-label {
+    text-decoration: line-through;
+}
+
 .mindmap-node-icon {
     font-size: 14px;
     flex-shrink: 0;
@@ -153,6 +161,22 @@
 .mindmap-node-expand {
     font-size: 9px;
     color: var(--text-tertiary);
+}
+
+.mindmap-node-tag {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 99px;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    background: var(--bg-tertiary);
+    flex-shrink: 0;
+}
+
+.mindmap-node-tag.invalid {
+    border-color: rgba(245, 158, 11, 0.45);
+    background: rgba(245, 158, 11, 0.12);
+    color: var(--warning);
 }
 
 .mindmap-handle {

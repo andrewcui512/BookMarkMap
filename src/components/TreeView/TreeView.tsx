@@ -23,6 +23,7 @@ interface TreeViewProps {
     onContextMenu?: (e: React.MouseEvent, node: TreeNode) => void;
     onClick?: (node: TreeNode) => void;
     getNodeClass?: (node: TreeNode) => string | string[] | undefined;
+    renderRight?: (node: TreeNode) => React.ReactNode;
 }
 
 export function TreeView({
@@ -33,6 +34,7 @@ export function TreeView({
     onContextMenu,
     onClick,
     getNodeClass,
+    renderRight,
 }: TreeViewProps) {
     const [internalExpanded, setInternalExpanded] = useState<Set<string>>(new Set());
     const expanded = controlledExpanded ?? internalExpanded;
@@ -66,6 +68,7 @@ export function TreeView({
                     onContextMenu={onContextMenu}
                     onClick={onClick}
                     getNodeClass={getNodeClass}
+                    renderRight={renderRight}
                 />
             ))}
         </div>
@@ -80,6 +83,7 @@ function TreeNodeItem({
     onContextMenu,
     onClick,
     getNodeClass,
+    renderRight,
 }: {
     node: TreeNode;
     searchQuery: string;
@@ -88,6 +92,7 @@ function TreeNodeItem({
     onContextMenu?: (e: React.MouseEvent, node: TreeNode) => void;
     onClick?: (node: TreeNode) => void;
     getNodeClass?: (node: TreeNode) => string | string[] | undefined;
+    renderRight?: (node: TreeNode) => React.ReactNode;
 }) {
     const { t } = useI18n();
     const isFolder = !node.url;
@@ -108,6 +113,7 @@ function TreeNodeItem({
                         onContextMenu={onContextMenu}
                         onClick={onClick}
                         getNodeClass={getNodeClass}
+                        renderRight={renderRight}
                     />
                 ))}
             </>
@@ -159,7 +165,7 @@ function TreeNodeItem({
                 {/* Title */}
                 <div className="tree-node-title">
                     {searchQuery ? (
-                        <span dangerouslySetInnerHTML={{ __html: highlightText(displayTitle, searchQuery) }} />
+                        <span>{renderHighlightedText(displayTitle, searchQuery)}</span>
                     ) : (
                         displayTitle
                     )}
@@ -167,6 +173,12 @@ function TreeNodeItem({
                         <span className="tree-node-count">({node.children!.length})</span>
                     )}
                 </div>
+
+                {renderRight ? (
+                    <div className="tree-node-right">
+                        {renderRight(node)}
+                    </div>
+                ) : null}
             </div>
 
             {/* Children */}
@@ -182,6 +194,7 @@ function TreeNodeItem({
                             onContextMenu={onContextMenu}
                             onClick={onClick}
                             getNodeClass={getNodeClass}
+                            renderRight={renderRight}
                         />
                     ))}
                 </div>
@@ -199,11 +212,45 @@ function FaviconImg({ url }: { url: string }) {
     return <img src={faviconUrl} onError={() => setFailed(true)} alt="" width={16} height={16} />;
 }
 
-function highlightText(text: string, query: string): string {
-    if (!query) return text;
-    const safe = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const regex = new RegExp(`(${safe})`, 'gi');
-    return text.replace(regex, '<span class="highlight">$1</span>');
+function renderHighlightedText(text: string, query: string): React.ReactNode {
+    const q = String(query || '').trim();
+    if (!q) return text;
+
+    // Escape regex special chars, then do a global, case-insensitive split.
+    const safe = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(safe, 'gi');
+
+    const parts: React.ReactNode[] = [];
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+
+    while ((match = regex.exec(text)) !== null) {
+        const start = match.index;
+        const end = start + match[0].length;
+
+        if (start > lastIndex) {
+            parts.push(text.slice(lastIndex, start));
+        }
+
+        parts.push(
+            <span key={`${start}-${end}`} className="highlight">
+                {text.slice(start, end)}
+            </span>
+        );
+
+        lastIndex = end;
+
+        // Avoid infinite loops on zero-length matches (shouldn't happen here).
+        if (regex.lastIndex === match.index) {
+            regex.lastIndex++;
+        }
+    }
+
+    if (lastIndex < text.length) {
+        parts.push(text.slice(lastIndex));
+    }
+
+    return parts.length ? parts : text;
 }
 
 // Persisted expand state hook

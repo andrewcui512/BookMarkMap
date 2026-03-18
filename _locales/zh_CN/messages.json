@@ -626,5 +626,49 @@
   "aiSearchNotConfigured": {
     "message": "请先在设置页面配置 AI 模型",
     "description": "AI 未配置提示"
+  },
+  "tags": {
+    "message": "标签",
+    "description": "标签功能"
+  },
+  "editTags": {
+    "message": "编辑标签",
+    "description": "编辑标签"
+  },
+  "addTagPlaceholder": {
+    "message": "输入标签后回车（支持逗号分隔）",
+    "description": "标签输入占位"
+  },
+  "tagsLocalOnlyHint": {
+    "message": "标签仅保存在本机（不会同步）",
+    "description": "标签本地提示"
+  },
+  "tagsLocalOnlyDesc": {
+    "message": "标签是插件的本地功能，数据保存在本机的 chrome.storage.local 中，不会随账号同步；卸载插件或清理浏览器数据可能导致标签丢失。",
+    "description": "设置页：标签本地说明"
+  },
+  "noTags": {
+    "message": "暂无标签",
+    "description": "无标签提示"
+  },
+  "tagInvalid": {
+    "message": "失效",
+    "description": "系统标签：失效"
+  },
+  "markInvalidTag": {
+    "message": "标记失效标签",
+    "description": "将书签标记为失效标签"
+  },
+  "taggedInvalid": {
+    "message": "已标记失效标签",
+    "description": "标记失效成功提示"
+  },
+  "add": {
+    "message": "添加",
+    "description": "通用：添加"
+  },
+  "close": {
+    "message": "关闭",
+    "description": "通用：关闭"
   }
 }
