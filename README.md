@@ -101,6 +101,7 @@ npm run build
 
 ## 权限与隐私
 - `bookmarks`：读取与管理你的书签（移动/重命名/删除等）
+- `favicon`：读取书签图标（走 Chrome 本地的 `_favicon` 接口，不联网）
 - `storage`：保存设置（包含你填写的 API Key）
 - `tabs`：打开书签/页面
 - `optional_host_permissions`：仅在需要联网功能（AI 搜索 / 失效检测）时请求站点访问授权

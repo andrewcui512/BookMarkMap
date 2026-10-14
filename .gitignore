@@ -50,3 +50,6 @@ bookmarks_*.html
 
 # 发布产物（不再入库；统一用 *.zip 覆盖大小写两种命名）
 *.zip
+
+# 浏览器验收产物（可重新生成）
+artifacts/

@@ -11,6 +11,7 @@
 
 ## 权限说明
 - `bookmarks`：读取与管理你的书签（重命名/移动/删除等）。
+- `favicon`：读取书签图标。图标由 Chrome 本地的 `_favicon` 接口提供，不产生网络请求。
 - `storage`：保存设置（包含 API Key）。
 - `tabs`：打开书签/页面。
 - **可选站点访问权限（optional_host_permissions）**：仅在你使用"AI 搜索 / 失效链接检测"等需要联网的功能时向你请求授权，可在扩展详情页随时撤销。
@@ -37,6 +38,7 @@ This extension aims to work locally whenever possible. It only makes network req
 
 ## Permissions
 - `bookmarks`: read/manage bookmarks (rename/move/delete).
+- `favicon`: read bookmark icons. Icons come from Chrome's local `_favicon` endpoint and cause no network request.
 - `storage`: store settings (including API key).
 - `tabs`: open bookmarks/pages.
 - **Optional site access (optional_host_permissions)**: requested only when needed for AI search/link-check features and can be revoked anytime in the extension details page.
