@@ -105,6 +105,16 @@
       }
     }
   },
+  "openAllSearchResultsInWindow": {
+    "message": "在同一窗口打开全部（$COUNT$）",
+    "description": "在同一个浏览器窗口中打开当前搜索命中的全部书签",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "12"
+      }
+    }
+  },
   "noSearchResultsToOpen": {
     "message": "没有可打开的命中书签",
     "description": "批量打开搜索结果为空时提示"
@@ -112,6 +122,16 @@
   "openedSearchResults": {
     "message": "已打开 $COUNT$ 个命中书签",
     "description": "批量打开搜索结果成功提示",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "12"
+      }
+    }
+  },
+  "openedSearchResultsInWindow": {
+    "message": "已在同一窗口打开 $COUNT$ 个命中书签",
+    "description": "在同一个浏览器窗口中批量打开搜索结果成功提示",
     "placeholders": {
       "count": {
         "content": "$1",

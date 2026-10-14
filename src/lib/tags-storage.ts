@@ -45,3 +45,11 @@ export async function removeTagsForIds(ids: string[]): Promise<TagsStoreV1> {
     });
 }
 
+export async function replaceTagsStore(tagsById: Record<string, string[]>): Promise<TagsStoreV1> {
+    const next: TagsStoreV1 = {
+        version: 1,
+        tagsById: { ...tagsById },
+    };
+    await writeTagsStore(next);
+    return next;
+}

@@ -201,6 +201,12 @@ export function getDefaultSettings(): Settings {
             'google.com', 'youtube.com', 'twitter.com', 'x.com',
             'facebook.com', 'instagram.com', 'reddit.com', 'discord.com',
         ],
+        autoTagRules: [
+            { id: randomId(), name: 'GitHub', mode: 'domain', pattern: 'github.com', tags: ['github', 'code'], enabled: true },
+            { id: randomId(), name: '文档', mode: 'keyword', pattern: 'docs|documentation|guide|教程|文档', tags: ['docs'], enabled: true },
+            { id: randomId(), name: '视频', mode: 'domain', pattern: 'youtube.com,bilibili.com', tags: ['video'], enabled: true },
+            { id: randomId(), name: 'AI', mode: 'keyword', pattern: 'ai|agent|llm|大模型', tags: ['ai'], enabled: true },
+        ],
         aiConfigs: [],
         activeAiConfigId: null,
     };
@@ -211,7 +217,11 @@ export async function getNormalizedSettings(): Promise<Settings> {
     return new Promise((resolve) => {
         chrome.storage.sync.get(['settings'], (result) => {
             const raw = result.settings || getDefaultSettings();
-            resolve(normalizeAiConfigs(raw));
+            const normalized = normalizeAiConfigs(raw);
+            if (!Array.isArray(normalized.autoTagRules)) {
+                normalized.autoTagRules = getDefaultSettings().autoTagRules || [];
+            }
+            resolve(normalized);
         });
     });
 }

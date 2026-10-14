@@ -7,8 +7,10 @@ import { getNormalizedSettings, getAiConfigByIdOrActive, assertAiConfigReady, up
 import { checkLink, checkLinks } from '@/lib/link-checker';
 import { searchBookmarksWithAi } from '@/background/ai-search';
 import { toChatCompletionsEndpoint } from '@/lib/ai-endpoint';
-import { now } from '@/lib/utils';
-import { removeTagsForIds, readTagsStore } from '@/lib/tags-storage';
+import { dedupeUrls, now } from '@/lib/utils';
+import { removeTagsForIds, readTagsStore, replaceTagsStore } from '@/lib/tags-storage';
+import { analyzeBatchCleanup, applyAutoTagRulesToMap } from '@/lib/organizer';
+import { popLastOperationSnapshot, pushOperationSnapshot } from '@/lib/operation-history';
 import type { AiConfig, AiConfigStats } from '@/types/bookmark';
 
 /* ────── Install / Update ────── */
@@ -57,6 +59,12 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
                 .catch((err) => sendResponse({ error: err.message }));
             return true;
 
+        case 'OPEN_URLS_IN_WINDOW':
+            openUrlsInWindow(Array.isArray(message.urls) ? message.urls : [])
+                .then((result) => sendResponse(result))
+                .catch((err) => sendResponse({ error: err.message }));
+            return true;
+
         case 'TEST_AI_CONNECTION':
             testAiConnection(message.configId)
                 .then((result) => sendResponse(result))
@@ -75,10 +83,90 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
             });
             return true;
 
+        case 'ANALYZE_BATCH_CLEANUP':
+            collectBookmarksTree()
+                .then((tree) => sendResponse(analyzeBatchCleanup(tree)))
+                .catch((err) => sendResponse({ error: err.message }));
+            return true;
+
+        case 'APPLY_AUTO_TAG_RULES':
+            applyAutoTagRules()
+                .then((result) => sendResponse(result))
+                .catch((err) => sendResponse({ error: err.message }));
+            return true;
+
+        case 'UNDO_LAST_OPERATION':
+            undoLastOperation()
+                .then((result) => sendResponse(result))
+                .catch((err) => sendResponse({ error: err.message }));
+            return true;
+
         default:
             sendResponse({ error: 'Unknown message type' });
     }
 });
+
+async function collectBookmarksTree() {
+    return (await chrome.bookmarks.getTree()) as any[];
+}
+
+async function snapshotBookmarksByIds(ids: string[], label: string) {
+    const uniqueIds = [...new Set(ids.filter(Boolean))];
+    const snapshots = [];
+    for (const id of uniqueIds) {
+        try {
+            const node = (await chrome.bookmarks.get(id))[0];
+            if (!node) continue;
+            snapshots.push({
+                id: node.id,
+                parentId: node.parentId,
+                index: node.index,
+                title: node.title || '',
+                url: node.url,
+            });
+        } catch {
+            // ignore missing nodes
+        }
+    }
+    if (snapshots.length > 0) {
+        await pushOperationSnapshot(label, snapshots);
+    }
+}
+
+async function applyAutoTagRules() {
+    const settings = await getNormalizedSettings();
+    const rules = settings.autoTagRules || [];
+    const tree = (await chrome.bookmarks.getTree()) as any[];
+    const tagStore = await readTagsStore();
+    const { nextTagsById, result } = applyAutoTagRulesToMap(tree, tagStore.tagsById || {}, rules);
+    if (result.updatedBookmarks > 0) {
+        await replaceTagsStore(nextTagsById);
+    }
+    return result;
+}
+
+async function undoLastOperation() {
+    const snapshot = await popLastOperationSnapshot();
+    if (!snapshot) return { restored: 0, label: null };
+
+    let restored = 0;
+    for (const node of snapshot.nodes) {
+        try {
+            await chrome.bookmarks.move(node.id, {
+                parentId: node.parentId,
+                index: typeof node.index === 'number' ? node.index : undefined,
+            });
+            const updatePayload: Parameters<typeof chrome.bookmarks.update>[1] = { title: node.title };
+            if (node.url) updatePayload.url = node.url;
+            await chrome.bookmarks.update(node.id, updatePayload);
+            restored += 1;
+        } catch {
+            // Skip nodes that no longer exist or cannot be restored.
+        }
+    }
+
+    return { restored, label: snapshot.label };
+}
 
 async function collectBookmarksForAi(options: { scope: 'all' | 'recent'; recentDays: number; tagFilters: string[] }) {
     const tree = await chrome.bookmarks.getTree();
@@ -112,6 +200,30 @@ async function collectBookmarksForAi(options: { scope: 'all' | 'recent'; recentD
     };
     traverse(tree);
     return results;
+}
+
+async function openUrlsInWindow(input: unknown[]) {
+    const urls = dedupeUrls(input.filter((url): url is string => typeof url === 'string'));
+    let windowId: number | null = null;
+    let openedCount = 0;
+
+    for (const url of urls) {
+        try {
+            if (windowId === null) {
+                const created = await chrome.windows.create({ url, focused: true });
+                windowId = typeof created.id === 'number' ? created.id : null;
+                openedCount += 1;
+                continue;
+            }
+
+            await chrome.tabs.create({ windowId, url, active: false });
+            openedCount += 1;
+        } catch (err) {
+            console.warn('[open-urls-in-window] failed', url, err);
+        }
+    }
+
+    return { openedCount, total: urls.length, windowId };
 }
 
 /* ────── AI: Test connection ────── */

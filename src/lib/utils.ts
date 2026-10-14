@@ -13,6 +13,21 @@ export function normalizeStr(value: unknown): string {
     return typeof value === 'string' ? value.trim() : '';
 }
 
+/** Deduplicate non-empty URLs while preserving order */
+export function dedupeUrls(urls: Array<string | null | undefined>): string[] {
+    const seen = new Set<string>();
+    const result: string[] = [];
+
+    for (const url of urls) {
+        const normalized = normalizeStr(url);
+        if (!normalized || seen.has(normalized)) continue;
+        seen.add(normalized);
+        result.push(normalized);
+    }
+
+    return result;
+}
+
 /** Random short ID */
 export function randomId(): string {
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);

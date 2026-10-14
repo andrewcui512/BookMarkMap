@@ -17,10 +17,11 @@ import { useTheme } from '@/hooks/useTheme';
 import { useAiSearch } from '@/hooks/useAiSearch';
 import { checkLinks } from '@/lib/link-checker';
 import { ensureOriginsPermission, WEB_ACCESS_ORIGINS } from '@/lib/permissions';
+import { callBackground, dedupeUrls } from '@/lib/utils';
 import * as bm from '@/lib/bookmark-manager';
 import { SYSTEM_TAG_INVALID, getTagDisplayLabel, parseSearchQuery, sortTagsForDisplay } from '@/lib/tags';
 import type { ContextMenuTarget } from '@/components/ContextMenu';
-import type { BookmarkNode, LinkCheckResult } from '@/types/bookmark';
+import type { BookmarkNode, LinkCheckResult, OpenUrlsInWindowResponse } from '@/types/bookmark';
 import './popup.css';
 
 const PROTECTED_NODE_IDS = new Set(['0', '1', '2', '3']);
@@ -74,40 +75,47 @@ export default function App() {
         }
     }, [bookmarks, searchQuery, searchLocal, aiSearch.aiSearchEnabled, getTags]);
 
-    const matchedBookmarkUrls = useMemo(() => {
+    const searchResultUrls = useMemo(() => {
         if (!searchQuery.trim()) return [];
 
-        const seenIds = new Set<string>();
-        return flatten(displayNodes as unknown as BookmarkNode[])
-            .filter((node) => {
-                if (!node.url) return false;
-                if (seenIds.has(node.id)) return false;
-                seenIds.add(node.id);
-                return true;
-            })
-            .map((node) => node.url!);
-    }, [displayNodes, flatten, searchQuery]);
+        if (aiSearch.aiSearchEnabled) {
+            return dedupeUrls(aiSearch.results.map((result) => result.url));
+        }
+
+        return dedupeUrls(
+            flatten(displayNodes as unknown as BookmarkNode[])
+                .filter((node) => Boolean(node.url))
+                .map((node) => node.url || '')
+        );
+    }, [aiSearch.aiSearchEnabled, aiSearch.results, displayNodes, flatten, searchQuery]);
 
     const handleOpenSearchResults = useCallback(async () => {
         if (!searchQuery.trim()) return;
 
-        if (matchedBookmarkUrls.length === 0) {
+        if (searchResultUrls.length === 0) {
             showToast(t('noSearchResultsToOpen'), 'info');
             return;
         }
 
-        const results = await Promise.allSettled(
-            matchedBookmarkUrls.map((url) => chrome.tabs.create({ url, active: false }))
-        );
-        const openedCount = results.filter((result) => result.status === 'fulfilled').length;
+        try {
+            const result = await callBackground<OpenUrlsInWindowResponse>({
+                type: 'OPEN_URLS_IN_WINDOW',
+                urls: searchResultUrls,
+            }) as OpenUrlsInWindowResponse & { error?: string };
+            if (result?.error) throw new Error(result.error);
+            const openedCount = Number(result?.openedCount || 0);
 
-        if (openedCount > 0) {
-            showToast(t('openedSearchResults', String(openedCount)), 'success');
+            if (openedCount > 0) {
+                showToast(t('openedSearchResultsInWindow', String(openedCount)), 'success');
+                return;
+            }
+        } catch (err) {
+            showToast((err as Error).message, 'error');
             return;
         }
 
         showToast(t('noSearchResultsToOpen'), 'warning');
-    }, [matchedBookmarkUrls, searchQuery, showToast, t]);
+    }, [searchQuery, searchResultUrls, showToast, t]);
 
     const handleContextAction = useCallback(
         async (action: string, target: ContextMenuTarget) => {
@@ -269,14 +277,14 @@ export default function App() {
                         searching={aiSearch.searching}
                     />
                 </div>
-                {searchQuery.trim() && !aiSearch.aiSearchEnabled && (
+                {searchQuery.trim() && (
                     <div className="popup-search-actions">
                         <button
                             className="btn btn-sm popup-open-all-btn"
                             onClick={handleOpenSearchResults}
-                            disabled={matchedBookmarkUrls.length === 0}
+                            disabled={searchResultUrls.length === 0 || aiSearch.searching}
                         >
-                            🚀 {t('openAllSearchResults', String(matchedBookmarkUrls.length))}
+                            🪟 {t('openAllSearchResultsInWindow', String(searchResultUrls.length))}
                         </button>
                     </div>
                 )}

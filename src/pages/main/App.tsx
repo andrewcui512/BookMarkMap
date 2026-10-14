@@ -18,9 +18,15 @@ import { ensureOriginsPermission, WEB_ACCESS_ORIGINS, urlToOriginPattern } from 
 import * as bm from '@/lib/bookmark-manager';
 import { SYSTEM_TAG_INVALID, getTagDisplayLabel, parseSearchQuery, sortTagsForDisplay } from '@/lib/tags';
 import { getAiConfigByIdOrActive, assertAiConfigReady } from '@/lib/ai-config';
-import { callBackground } from '@/lib/utils';
+import { callBackground, dedupeUrls } from '@/lib/utils';
 import type { ContextMenuTarget } from '@/components/ContextMenu';
-import type { BookmarkNode, LinkCheckResult } from '@/types/bookmark';
+import type {
+    AutoTagApplyResult,
+    BatchCleanupReport,
+    BookmarkNode,
+    LinkCheckResult,
+    OpenUrlsInWindowResponse,
+} from '@/types/bookmark';
 import './main.css';
 
 type ViewType = 'all' | 'recent';
@@ -61,6 +67,12 @@ export default function App() {
     const [linkCheckProgress, setLinkCheckProgress] = useState({ checked: 0, total: 0 });
     const [tagEditOpen, setTagEditOpen] = useState(false);
     const [tagEditTarget, setTagEditTarget] = useState<ContextMenuTarget | null>(null);
+    const [organizeOpen, setOrganizeOpen] = useState(false);
+    const [cleanupReport, setCleanupReport] = useState<BatchCleanupReport | null>(null);
+    const [cleanupLoading, setCleanupLoading] = useState(false);
+    const [autoTagRunning, setAutoTagRunning] = useState(false);
+    const [autoTagResult, setAutoTagResult] = useState<AutoTagApplyResult | null>(null);
+    const [undoRunning, setUndoRunning] = useState(false);
 
     useEffect(() => { load(); }, [load]);
 
@@ -314,6 +326,116 @@ export default function App() {
         r => r.status === 'invalid' || r.status === 'timeout' || r.status === 'client_error' || r.status === 'server_error'
     );
 
+    const searchResultUrls = useMemo(() => {
+        if (!searchQuery.trim()) return [];
+
+        return dedupeUrls(
+            flatten(displayNodes as unknown as BookmarkNode[])
+                .filter((node) => Boolean(node.url))
+                .map((node) => node.url || '')
+        );
+    }, [displayNodes, flatten, searchQuery]);
+
+    const handleOpenSearchResults = useCallback(async () => {
+        if (!searchQuery.trim()) return;
+
+        if (searchResultUrls.length === 0) {
+            showToast(t('noSearchResultsToOpen'), 'info');
+            return;
+        }
+
+        try {
+            const result = await callBackground<OpenUrlsInWindowResponse>({
+                type: 'OPEN_URLS_IN_WINDOW',
+                urls: searchResultUrls,
+            }) as OpenUrlsInWindowResponse & { error?: string };
+            if (result?.error) throw new Error(result.error);
+            const openedCount = Number(result?.openedCount || 0);
+
+            if (openedCount > 0) {
+                showToast(t('openedSearchResultsInWindow', String(openedCount)), 'success');
+                return;
+            }
+        } catch (err) {
+            showToast((err as Error).message, 'error');
+            return;
+        }
+
+        showToast(t('noSearchResultsToOpen'), 'warning');
+    }, [searchQuery, searchResultUrls, showToast, t]);
+
+    const handleOpenOrganizer = useCallback(async () => {
+        setOrganizeOpen(true);
+        setCleanupLoading(true);
+        setAutoTagResult(null);
+        try {
+            const report = await callBackground<BatchCleanupReport & { error?: string }>({
+                type: 'ANALYZE_BATCH_CLEANUP',
+            });
+            if ((report as any)?.error) throw new Error((report as any).error);
+            setCleanupReport(report);
+        } catch (err) {
+            showToast((err as Error).message, 'error');
+        } finally {
+            setCleanupLoading(false);
+        }
+    }, [showToast]);
+
+    const handleRemoveDuplicates = useCallback(async () => {
+        if (!cleanupReport || cleanupReport.duplicateCandidates.length === 0) {
+            showToast('没有可处理的精确重复项', 'info');
+            return;
+        }
+
+        const duplicateIds = cleanupReport.duplicateCandidates.flatMap((item) => item.ids.slice(1));
+        if (duplicateIds.length === 0) {
+            showToast('没有可删除的重复书签', 'info');
+            return;
+        }
+
+        const removed = await bm.removeMany(duplicateIds, '批量删除重复书签');
+        await load({ silent: true });
+        showToast(`已删除 ${removed} 个重复书签`, 'success');
+        await handleOpenOrganizer();
+    }, [cleanupReport, handleOpenOrganizer, load, showToast]);
+
+    const handleApplyAutoTags = useCallback(async () => {
+        setAutoTagRunning(true);
+        try {
+            const result = await callBackground<AutoTagApplyResult & { error?: string }>({
+                type: 'APPLY_AUTO_TAG_RULES',
+            });
+            if ((result as any)?.error) throw new Error((result as any).error);
+            setAutoTagResult(result);
+            showToast(`已更新 ${result.updatedBookmarks} 个书签标签`, 'success');
+        } catch (err) {
+            showToast((err as Error).message, 'error');
+        } finally {
+            setAutoTagRunning(false);
+        }
+    }, [showToast]);
+
+    const handleUndoLastOperation = useCallback(async () => {
+        setUndoRunning(true);
+        try {
+            const result = await callBackground<{ restored: number; label: string | null; error?: string }>({
+                type: 'UNDO_LAST_OPERATION',
+            });
+            if (result?.error) throw new Error(result.error);
+            if (!result.restored) {
+                showToast('没有可撤销的批量操作', 'info');
+                return;
+            }
+            await load({ silent: true });
+            showToast(`已撤销 ${result.restored} 项：${result.label || '最近操作'}`, 'success');
+            if (organizeOpen) await handleOpenOrganizer();
+        } catch (err) {
+            showToast((err as Error).message, 'error');
+        } finally {
+            setUndoRunning(false);
+        }
+    }, [handleOpenOrganizer, load, organizeOpen, showToast]);
+
     const bookmarkCount = flatten(bookmarks as unknown as BookmarkNode[]).length;
     const folderCount = allFolderIds.length;
     const linkCheckPercent = linkCheckProgress.total > 0 ? Math.round((linkCheckProgress.checked / linkCheckProgress.total) * 100) : 0;
@@ -340,8 +462,14 @@ export default function App() {
                     <button className="sidebar-item" onClick={handleLinkCheck}>
                         🔍 {t('checkLinks')}
                     </button>
+                    <button className="sidebar-item" onClick={handleOpenOrganizer}>
+                        🧹 整理中心
+                    </button>
                     <button className="sidebar-item" onClick={() => setNewFolderOpen(true)}>
                         ➕ {t('newFolder')}
+                    </button>
+                    <button className="sidebar-item" onClick={handleUndoLastOperation} disabled={undoRunning}>
+                        ↩️ {undoRunning ? '撤销中...' : '撤销上次批量操作'}
                     </button>
                 </nav>
                 <div className="sidebar-divider" />
@@ -408,6 +536,18 @@ export default function App() {
                 </header>
 
                 <div className="main-content">
+                    {searchQuery.trim() && (
+                        <div className="main-search-actions">
+                            <button
+                                className="tree-toggle-btn main-open-all-btn"
+                                onClick={handleOpenSearchResults}
+                                disabled={searchResultUrls.length === 0 || aiSearching}
+                                type="button"
+                            >
+                                🪟 {t('openAllSearchResultsInWindow', String(searchResultUrls.length))}
+                            </button>
+                        </div>
+                    )}
                     {loading || aiSearching ? (
                         <div className="state-container">
                             <div className="spinner" />
@@ -488,6 +628,77 @@ export default function App() {
                         void setTags(tagEditTarget.id, next);
                     }}
                 />
+            </Modal>
+
+            <Modal
+                open={organizeOpen}
+                onClose={() => setOrganizeOpen(false)}
+                title="🧹 整理中心"
+                width="820px"
+                footer={
+                    <>
+                        <button className="btn" onClick={() => setOrganizeOpen(false)}>{t('close')}</button>
+                        <button className="btn" onClick={handleApplyAutoTags} disabled={autoTagRunning}>
+                            {autoTagRunning ? '处理中...' : '🏷️ 一键自动打标签'}
+                        </button>
+                        <button className="btn btn-primary" onClick={handleRemoveDuplicates} disabled={!cleanupReport || cleanupReport.duplicateCandidates.length === 0}>
+                            🗑️ 删除精确重复
+                        </button>
+                    </>
+                }
+            >
+                {cleanupLoading ? (
+                    <div className="state-container">
+                        <div className="spinner" />
+                        <div className="state-text">正在分析重复与整理机会...</div>
+                    </div>
+                ) : (
+                    <div className="organizer-panel">
+                        <div className="organizer-grid">
+                            <div className="organizer-card">
+                                <div className="organizer-card-label">总书签</div>
+                                <div className="organizer-card-value">{cleanupReport?.totalBookmarks ?? 0}</div>
+                            </div>
+                            <div className="organizer-card">
+                                <div className="organizer-card-label">重复候选组</div>
+                                <div className="organizer-card-value">{cleanupReport?.duplicateCandidates.length ?? 0}</div>
+                            </div>
+                            <div className="organizer-card">
+                                <div className="organizer-card-label">自动标签更新</div>
+                                <div className="organizer-card-value">{autoTagResult?.updatedBookmarks ?? 0}</div>
+                            </div>
+                        </div>
+
+                        {autoTagResult && (
+                            <div className="organizer-section">
+                                <div className="organizer-section-title">自动标签结果</div>
+                                <div className="organizer-help">
+                                    匹配 {autoTagResult.matchedBookmarks} 个书签，实际更新 {autoTagResult.updatedBookmarks} 个。
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="organizer-section">
+                            <div className="organizer-section-title">精确重复候选</div>
+                            <div className="organizer-help">
+                                规则：相同域名 + 相同标题。默认保留每组第一条，其余作为重复候选。
+                            </div>
+                            <div className="organizer-list">
+                                {(cleanupReport?.duplicateCandidates || []).slice(0, 40).map((item) => (
+                                    <div key={item.key} className="organizer-item">
+                                        <div className="organizer-item-title">{item.title}</div>
+                                        <div className="organizer-item-meta">
+                                            {item.count} 条 · {item.urls.slice(0, 2).join(' · ')}
+                                        </div>
+                                    </div>
+                                ))}
+                                {cleanupReport && cleanupReport.duplicateCandidates.length === 0 && (
+                                    <div className="organizer-help">没有发现精确重复的书签。</div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
             </Modal>
 
             <Modal open={linkCheckOpen} onClose={() => setLinkCheckOpen(false)} title={t('checkLinks')} width="600px">

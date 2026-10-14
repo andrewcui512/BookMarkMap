@@ -105,6 +105,16 @@
       }
     }
   },
+  "openAllSearchResultsInWindow": {
+    "message": "Open all in one window ($COUNT$)",
+    "description": "Open all bookmarks matched by current search in a single browser window",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "12"
+      }
+    }
+  },
   "noSearchResultsToOpen": {
     "message": "No matched bookmarks to open",
     "description": "Shown when no bookmark URL is available in current search results"
@@ -112,6 +122,16 @@
   "openedSearchResults": {
     "message": "Opened $COUNT$ matched bookmarks",
     "description": "Toast for successful open-all from search",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "12"
+      }
+    }
+  },
+  "openedSearchResultsInWindow": {
+    "message": "Opened $COUNT$ matched bookmarks in one window",
+    "description": "Toast for successfully opening all current search results in a single browser window",
     "placeholders": {
       "count": {
         "content": "$1",

@@ -6,6 +6,7 @@
 import type { BookmarkNode } from '@/types/bookmark';
 import { getMessage } from '@/lib/i18n';
 import { parseSearchQuery, resolveTagAlias } from '@/lib/tags';
+import { pushOperationSnapshot } from '@/lib/operation-history';
 
 type ChromeBookmarkTreeNode = chrome.bookmarks.BookmarkTreeNode;
 
@@ -168,6 +169,49 @@ export async function moveToInvalid(bookmarkIds: string[]): Promise<void> {
     for (const id of bookmarkIds) {
         await move(id, invalidFolder.id);
     }
+}
+
+export async function snapshotNodes(ids: string[], label: string): Promise<void> {
+    const uniqueIds = [...new Set(ids.filter(Boolean))];
+    if (uniqueIds.length === 0) return;
+
+    const nodes = [];
+    for (const id of uniqueIds) {
+        try {
+            const node = await getNode(id);
+            if (!node) continue;
+            nodes.push({
+                id: node.id,
+                parentId: node.parentId,
+                index: node.index,
+                title: node.title || '',
+                url: node.url,
+            });
+        } catch {
+            // ignore missing nodes
+        }
+    }
+
+    if (nodes.length > 0) {
+        await pushOperationSnapshot(label, nodes);
+    }
+}
+
+export async function removeMany(ids: string[], label: string = '批量删除'): Promise<number> {
+    const uniqueIds = [...new Set(ids.filter(Boolean))];
+    if (uniqueIds.length === 0) return 0;
+    await snapshotNodes(uniqueIds, label);
+
+    let removed = 0;
+    for (const id of uniqueIds) {
+        try {
+            await remove(id);
+            removed += 1;
+        } catch {
+            // keep going
+        }
+    }
+    return removed;
 }
 
 /** Get recent bookmarks (added within the last N days) */
