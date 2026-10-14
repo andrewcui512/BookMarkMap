@@ -469,7 +469,7 @@ export default function App() {
                         ➕ {t('newFolder')}
                     </button>
                     <button className="sidebar-item" onClick={handleUndoLastOperation} disabled={undoRunning}>
-                        ↩️ {undoRunning ? t('undoRunning') : t('undoLastOperation')}
+                        {undoRunning ? t('undoRunning') : t('undoLastOperation')}
                     </button>
                 </nav>
                 <div className="sidebar-divider" />
