@@ -690,5 +690,171 @@
   "close": {
     "message": "Close",
     "description": "Generic: close"
+  },
+  "searchModeLocal": {
+    "message": "🔎 Local",
+    "description": "主页面：本地搜索模式按钮"
+  },
+  "searchModeLocalTitle": {
+    "message": "Local search",
+    "description": "主页面：本地搜索按钮的提示"
+  },
+  "searchModeAi": {
+    "message": "AI search",
+    "description": "主页面：AI 搜索模式按钮与提示"
+  },
+  "searchPlaceholderAi": {
+    "message": "AI search (natural language)",
+    "description": "主页面：AI 模式下的搜索框占位符"
+  },
+  "searchingAi": {
+    "message": "AI search in progress...",
+    "description": "主页面：AI 搜索进行中的状态文案"
+  },
+  "organizerTitle": {
+    "message": "🧹 Organize Center",
+    "description": "主页面：整理中心面板标题"
+  },
+  "organizerAnalyzing": {
+    "message": "Analyzing duplicates and cleanup opportunities...",
+    "description": "整理中心：加载状态"
+  },
+  "organizerTotalBookmarks": {
+    "message": "Total bookmarks",
+    "description": "整理中心：书签总数指标"
+  },
+  "organizerDuplicateGroups": {
+    "message": "Duplicate groups",
+    "description": "整理中心：重复候选组数量指标"
+  },
+  "organizerTagUpdates": {
+    "message": "Tag updates",
+    "description": "整理中心：自动标签实际更新数量指标"
+  },
+  "organizerTagResults": {
+    "message": "Auto-tag result",
+    "description": "整理中心：自动标签结果小节标题"
+  },
+  "organizerDuplicateCandidates": {
+    "message": "Exact duplicate candidates",
+    "description": "整理中心：重复候选小节标题"
+  },
+  "organizerDuplicateRule": {
+    "message": "Rule: same domain and same title. The first entry of each group is kept and the rest are listed as candidates.",
+    "description": "整理中心：重复判定规则说明"
+  },
+  "organizerNoDuplicates": {
+    "message": "No exact duplicates found.",
+    "description": "整理中心：没有重复时的空态"
+  },
+  "organizerApplyAutoTags": {
+    "message": "🏷️ Auto-tag now",
+    "description": "整理中心：应用自动标签按钮"
+  },
+  "organizerRemoveDuplicates": {
+    "message": "🗑️ Delete exact duplicates",
+    "description": "整理中心：删除重复书签按钮"
+  },
+  "organizerRunning": {
+    "message": "Working...",
+    "description": "整理中心：操作进行中"
+  },
+  "organizerNothingToClean": {
+    "message": "No exact duplicates to work with",
+    "description": "整理中心：没有重复项可处理"
+  },
+  "organizerNothingToDelete": {
+    "message": "No duplicate bookmarks to delete",
+    "description": "整理中心：没有多余副本可删除"
+  },
+  "organizerCleanupNote": {
+    "message": "Batch delete duplicate bookmarks",
+    "description": "撤销历史中记录的批量删除操作名"
+  },
+  "undoLastOperation": {
+    "message": "↩️ Undo last batch action",
+    "description": "整理中心：撤销按钮"
+  },
+  "undoRunning": {
+    "message": "Undoing...",
+    "description": "整理中心：撤销进行中"
+  },
+  "undoNothing": {
+    "message": "Nothing to undo",
+    "description": "整理中心：没有可撤销的操作"
+  },
+  "recentOperation": {
+    "message": "last action",
+    "description": "撤销提示中操作名为空时的回退文案"
+  },
+  "organizerTagResultDetail": {
+    "message": "Matched $MATCHED$ bookmarks and updated $UPDATED$.",
+    "description": "整理中心：自动标签结果摘要",
+    "placeholders": {
+      "matched": {
+        "content": "$1",
+        "example": "12"
+      },
+      "updated": {
+        "content": "$2",
+        "example": "8"
+      }
+    }
+  },
+  "organizerDuplicateItemCount": {
+    "message": "$COUNT$ links",
+    "description": "整理中心：每组重复条数",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "organizerDeletedCount": {
+    "message": "Deleted $COUNT$ duplicate bookmarks",
+    "description": "整理中心：删除完成提示",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "organizerTagsUpdatedCount": {
+    "message": "Updated tags on $COUNT$ bookmarks",
+    "description": "整理中心：自动标签完成提示",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "8"
+      }
+    }
+  },
+  "undoDone": {
+    "message": "Undid $COUNT$ items: $LABEL$",
+    "description": "整理中心：撤销完成提示",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      },
+      "label": {
+        "content": "$2",
+        "example": "批量删除重复书签"
+      }
+    }
+  },
+  "auto": {
+    "message": "System",
+    "description": "设置页：深色模式选项"
+  },
+  "light": {
+    "message": "Light",
+    "description": "设置页：深色模式选项"
+  },
+  "dark": {
+    "message": "Dark",
+    "description": "设置页：深色模式选项"
   }
 }

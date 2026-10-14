@@ -383,21 +383,21 @@ export default function App() {
 
     const handleRemoveDuplicates = useCallback(async () => {
         if (!cleanupReport || cleanupReport.duplicateCandidates.length === 0) {
-            showToast('没有可处理的精确重复项', 'info');
+            showToast(t('organizerNothingToClean'), 'info');
             return;
         }
 
         const duplicateIds = cleanupReport.duplicateCandidates.flatMap((item) => item.ids.slice(1));
         if (duplicateIds.length === 0) {
-            showToast('没有可删除的重复书签', 'info');
+            showToast(t('organizerNothingToDelete'), 'info');
             return;
         }
 
-        const removed = await bm.removeMany(duplicateIds, '批量删除重复书签');
+        const removed = await bm.removeMany(duplicateIds, t('organizerCleanupNote'));
         await load({ silent: true });
-        showToast(`已删除 ${removed} 个重复书签`, 'success');
+        showToast(t('organizerDeletedCount', [String(removed)]), 'success');
         await handleOpenOrganizer();
-    }, [cleanupReport, handleOpenOrganizer, load, showToast]);
+    }, [cleanupReport, handleOpenOrganizer, load, showToast, t]);
 
     const handleApplyAutoTags = useCallback(async () => {
         setAutoTagRunning(true);
@@ -407,13 +407,13 @@ export default function App() {
             });
             if ((result as any)?.error) throw new Error((result as any).error);
             setAutoTagResult(result);
-            showToast(`已更新 ${result.updatedBookmarks} 个书签标签`, 'success');
+            showToast(t('organizerTagsUpdatedCount', [String(result.updatedBookmarks)]), 'success');
         } catch (err) {
             showToast((err as Error).message, 'error');
         } finally {
             setAutoTagRunning(false);
         }
-    }, [showToast]);
+    }, [showToast, t]);
 
     const handleUndoLastOperation = useCallback(async () => {
         setUndoRunning(true);
@@ -423,18 +423,18 @@ export default function App() {
             });
             if (result?.error) throw new Error(result.error);
             if (!result.restored) {
-                showToast('没有可撤销的批量操作', 'info');
+                showToast(t('undoNothing'), 'info');
                 return;
             }
             await load({ silent: true });
-            showToast(`已撤销 ${result.restored} 项：${result.label || '最近操作'}`, 'success');
+            showToast(t('undoDone', [String(result.restored), result.label || t('recentOperation')]), 'success');
             if (organizeOpen) await handleOpenOrganizer();
         } catch (err) {
             showToast((err as Error).message, 'error');
         } finally {
             setUndoRunning(false);
         }
-    }, [handleOpenOrganizer, load, organizeOpen, showToast]);
+    }, [handleOpenOrganizer, load, organizeOpen, showToast, t]);
 
     const bookmarkCount = flatten(bookmarks as unknown as BookmarkNode[]).length;
     const folderCount = allFolderIds.length;
@@ -463,13 +463,13 @@ export default function App() {
                         🔍 {t('checkLinks')}
                     </button>
                     <button className="sidebar-item" onClick={handleOpenOrganizer}>
-                        🧹 整理中心
+                        {t('organizerTitle')}
                     </button>
                     <button className="sidebar-item" onClick={() => setNewFolderOpen(true)}>
                         ➕ {t('newFolder')}
                     </button>
                     <button className="sidebar-item" onClick={handleUndoLastOperation} disabled={undoRunning}>
-                        ↩️ {undoRunning ? '撤销中...' : '撤销上次批量操作'}
+                        ↩️ {undoRunning ? t('undoRunning') : t('undoLastOperation')}
                     </button>
                 </nav>
                 <div className="sidebar-divider" />
@@ -505,7 +505,7 @@ export default function App() {
                     <div className="main-search">
                         <input
                             type="text"
-                            placeholder={searchMode === 'ai' ? 'AI 搜索（支持自然语言）' : t('searchPlaceholder')}
+                            placeholder={searchMode === 'ai' ? t('searchPlaceholderAi') : t('searchPlaceholder')}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
@@ -513,15 +513,15 @@ export default function App() {
                             <button
                                 className={`tree-toggle-btn ${searchMode === 'local' ? 'expanded' : ''}`}
                                 onClick={() => setSearchMode('local')}
-                                title="本地搜索"
+                                title={t('searchModeLocalTitle')}
                                 type="button"
                             >
-                                🔎 本地
+                                {t('searchModeLocal')}
                             </button>
                             <button
                                 className={`tree-toggle-btn ${searchMode === 'ai' ? 'expanded' : ''}`}
                                 onClick={() => setSearchMode('ai')}
-                                title="AI 搜索"
+                                title={t('searchModeAi')}
                                 type="button"
                             >
                                 {aiSearching ? '⏳ AI' : '🤖 AI'}
@@ -551,7 +551,7 @@ export default function App() {
                     {loading || aiSearching ? (
                         <div className="state-container">
                             <div className="spinner" />
-                            <div className="state-text">{loading ? t('loading') : 'AI 搜索中...'}</div>
+                            <div className="state-text">{loading ? t('loading') : t('searchingAi')}</div>
                         </div>
                     ) : displayNodes.length === 0 ? (
                         <div className="state-container"><div className="state-icon">📭</div><div className="state-text">{searchQuery ? t('noResults') : t('noBookmarks')}</div></div>
@@ -633,16 +633,16 @@ export default function App() {
             <Modal
                 open={organizeOpen}
                 onClose={() => setOrganizeOpen(false)}
-                title="🧹 整理中心"
+                title={t('organizerTitle')}
                 width="820px"
                 footer={
                     <>
                         <button className="btn" onClick={() => setOrganizeOpen(false)}>{t('close')}</button>
                         <button className="btn" onClick={handleApplyAutoTags} disabled={autoTagRunning}>
-                            {autoTagRunning ? '处理中...' : '🏷️ 一键自动打标签'}
+                            {autoTagRunning ? t('organizerRunning') : t('organizerApplyAutoTags')}
                         </button>
                         <button className="btn btn-primary" onClick={handleRemoveDuplicates} disabled={!cleanupReport || cleanupReport.duplicateCandidates.length === 0}>
-                            🗑️ 删除精确重复
+                            {t('organizerRemoveDuplicates')}
                         </button>
                     </>
                 }
@@ -650,50 +650,50 @@ export default function App() {
                 {cleanupLoading ? (
                     <div className="state-container">
                         <div className="spinner" />
-                        <div className="state-text">正在分析重复与整理机会...</div>
+                        <div className="state-text">{t('organizerAnalyzing')}</div>
                     </div>
                 ) : (
                     <div className="organizer-panel">
                         <div className="organizer-grid">
                             <div className="organizer-card">
-                                <div className="organizer-card-label">总书签</div>
+                                <div className="organizer-card-label">{t('organizerTotalBookmarks')}</div>
                                 <div className="organizer-card-value">{cleanupReport?.totalBookmarks ?? 0}</div>
                             </div>
                             <div className="organizer-card">
-                                <div className="organizer-card-label">重复候选组</div>
+                                <div className="organizer-card-label">{t('organizerDuplicateGroups')}</div>
                                 <div className="organizer-card-value">{cleanupReport?.duplicateCandidates.length ?? 0}</div>
                             </div>
                             <div className="organizer-card">
-                                <div className="organizer-card-label">自动标签更新</div>
+                                <div className="organizer-card-label">{t('organizerTagUpdates')}</div>
                                 <div className="organizer-card-value">{autoTagResult?.updatedBookmarks ?? 0}</div>
                             </div>
                         </div>
 
                         {autoTagResult && (
                             <div className="organizer-section">
-                                <div className="organizer-section-title">自动标签结果</div>
+                                <div className="organizer-section-title">{t('organizerTagResults')}</div>
                                 <div className="organizer-help">
-                                    匹配 {autoTagResult.matchedBookmarks} 个书签，实际更新 {autoTagResult.updatedBookmarks} 个。
+                                    {t('organizerTagResultDetail', [String(autoTagResult.matchedBookmarks), String(autoTagResult.updatedBookmarks)])}
                                 </div>
                             </div>
                         )}
 
                         <div className="organizer-section">
-                            <div className="organizer-section-title">精确重复候选</div>
+                            <div className="organizer-section-title">{t('organizerDuplicateCandidates')}</div>
                             <div className="organizer-help">
-                                规则：相同域名 + 相同标题。默认保留每组第一条，其余作为重复候选。
+                                {t('organizerDuplicateRule')}
                             </div>
                             <div className="organizer-list">
                                 {(cleanupReport?.duplicateCandidates || []).slice(0, 40).map((item) => (
                                     <div key={item.key} className="organizer-item">
                                         <div className="organizer-item-title">{item.title}</div>
                                         <div className="organizer-item-meta">
-                                            {item.count} 条 · {item.urls.slice(0, 2).join(' · ')}
+                                            {t('organizerDuplicateItemCount', [String(item.count)])} · {item.urls.slice(0, 2).join(' · ')}
                                         </div>
                                     </div>
                                 ))}
                                 {cleanupReport && cleanupReport.duplicateCandidates.length === 0 && (
-                                    <div className="organizer-help">没有发现精确重复的书签。</div>
+                                    <div className="organizer-help">{t('organizerNoDuplicates')}</div>
                                 )}
                             </div>
                         </div>

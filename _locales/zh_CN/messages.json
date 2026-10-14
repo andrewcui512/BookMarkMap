@@ -690,5 +690,171 @@
   "close": {
     "message": "关闭",
     "description": "通用：关闭"
+  },
+  "searchModeLocal": {
+    "message": "🔎 本地",
+    "description": "主页面：本地搜索模式按钮"
+  },
+  "searchModeLocalTitle": {
+    "message": "本地搜索",
+    "description": "主页面：本地搜索按钮的提示"
+  },
+  "searchModeAi": {
+    "message": "AI 搜索",
+    "description": "主页面：AI 搜索模式按钮与提示"
+  },
+  "searchPlaceholderAi": {
+    "message": "AI 搜索（支持自然语言）",
+    "description": "主页面：AI 模式下的搜索框占位符"
+  },
+  "searchingAi": {
+    "message": "AI 搜索中...",
+    "description": "主页面：AI 搜索进行中的状态文案"
+  },
+  "organizerTitle": {
+    "message": "🧹 整理中心",
+    "description": "主页面：整理中心面板标题"
+  },
+  "organizerAnalyzing": {
+    "message": "正在分析重复与整理机会...",
+    "description": "整理中心：加载状态"
+  },
+  "organizerTotalBookmarks": {
+    "message": "总书签",
+    "description": "整理中心：书签总数指标"
+  },
+  "organizerDuplicateGroups": {
+    "message": "重复候选组",
+    "description": "整理中心：重复候选组数量指标"
+  },
+  "organizerTagUpdates": {
+    "message": "自动标签更新",
+    "description": "整理中心：自动标签实际更新数量指标"
+  },
+  "organizerTagResults": {
+    "message": "自动标签结果",
+    "description": "整理中心：自动标签结果小节标题"
+  },
+  "organizerDuplicateCandidates": {
+    "message": "精确重复候选",
+    "description": "整理中心：重复候选小节标题"
+  },
+  "organizerDuplicateRule": {
+    "message": "规则：相同域名 + 相同标题。默认保留每组第一条，其余作为重复候选。",
+    "description": "整理中心：重复判定规则说明"
+  },
+  "organizerNoDuplicates": {
+    "message": "没有发现精确重复的书签。",
+    "description": "整理中心：没有重复时的空态"
+  },
+  "organizerApplyAutoTags": {
+    "message": "🏷️ 一键自动打标签",
+    "description": "整理中心：应用自动标签按钮"
+  },
+  "organizerRemoveDuplicates": {
+    "message": "🗑️ 删除精确重复",
+    "description": "整理中心：删除重复书签按钮"
+  },
+  "organizerRunning": {
+    "message": "处理中...",
+    "description": "整理中心：操作进行中"
+  },
+  "organizerNothingToClean": {
+    "message": "没有可处理的精确重复项",
+    "description": "整理中心：没有重复项可处理"
+  },
+  "organizerNothingToDelete": {
+    "message": "没有可删除的重复书签",
+    "description": "整理中心：没有多余副本可删除"
+  },
+  "organizerCleanupNote": {
+    "message": "批量删除重复书签",
+    "description": "撤销历史中记录的批量删除操作名"
+  },
+  "undoLastOperation": {
+    "message": "↩️ 撤销上次批量操作",
+    "description": "整理中心：撤销按钮"
+  },
+  "undoRunning": {
+    "message": "撤销中...",
+    "description": "整理中心：撤销进行中"
+  },
+  "undoNothing": {
+    "message": "没有可撤销的批量操作",
+    "description": "整理中心：没有可撤销的操作"
+  },
+  "recentOperation": {
+    "message": "最近操作",
+    "description": "撤销提示中操作名为空时的回退文案"
+  },
+  "organizerTagResultDetail": {
+    "message": "匹配 $MATCHED$ 个书签，实际更新 $UPDATED$ 个。",
+    "description": "整理中心：自动标签结果摘要",
+    "placeholders": {
+      "matched": {
+        "content": "$1",
+        "example": "12"
+      },
+      "updated": {
+        "content": "$2",
+        "example": "8"
+      }
+    }
+  },
+  "organizerDuplicateItemCount": {
+    "message": "$COUNT$ 条",
+    "description": "整理中心：每组重复条数",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "organizerDeletedCount": {
+    "message": "已删除 $COUNT$ 个重复书签",
+    "description": "整理中心：删除完成提示",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "organizerTagsUpdatedCount": {
+    "message": "已更新 $COUNT$ 个书签标签",
+    "description": "整理中心：自动标签完成提示",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "8"
+      }
+    }
+  },
+  "undoDone": {
+    "message": "已撤销 $COUNT$ 项：$LABEL$",
+    "description": "整理中心：撤销完成提示",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      },
+      "label": {
+        "content": "$2",
+        "example": "批量删除重复书签"
+      }
+    }
+  },
+  "auto": {
+    "message": "跟随系统",
+    "description": "设置页：深色模式选项"
+  },
+  "light": {
+    "message": "浅色",
+    "description": "设置页：深色模式选项"
+  },
+  "dark": {
+    "message": "深色",
+    "description": "设置页：深色模式选项"
   }
 }
