@@ -85,8 +85,10 @@ export function analyzeBatchCleanup(nodes: BookmarkNode[]): BatchCleanupReport {
 }
 
 function splitRulePatterns(pattern: string): string[] {
+    // `|` is the alternation the built-in rules use (`docs|documentation|guide`),
+    // so it has to split here too — otherwise the whole string is one literal.
     return String(pattern || '')
-        .split(/[,\n]/)
+        .split(/[|,\n]/)
         .map((x) => x.trim().toLowerCase())
         .filter(Boolean);
 }

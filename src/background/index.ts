@@ -10,7 +10,7 @@ import { toChatCompletionsEndpoint } from '@/lib/ai-endpoint';
 import { dedupeUrls, now } from '@/lib/utils';
 import { removeTagsForIds, readTagsStore, replaceTagsStore } from '@/lib/tags-storage';
 import { analyzeBatchCleanup, applyAutoTagRulesToMap } from '@/lib/organizer';
-import { popLastOperationSnapshot, pushOperationSnapshot } from '@/lib/operation-history';
+import { peekLastOperationSnapshot, popLastOperationSnapshot, pushOperationSnapshot } from '@/lib/operation-history';
 import type { AiConfig, AiConfigStats } from '@/types/bookmark';
 
 /* ────── Install / Update ────── */
@@ -146,23 +146,43 @@ async function applyAutoTagRules() {
 }
 
 async function undoLastOperation() {
-    const snapshot = await popLastOperationSnapshot();
+    const snapshot = await peekLastOperationSnapshot();
     if (!snapshot) return { restored: 0, label: null };
 
     let restored = 0;
     for (const node of snapshot.nodes) {
         try {
-            await chrome.bookmarks.move(node.id, {
-                parentId: node.parentId,
-                index: typeof node.index === 'number' ? node.index : undefined,
-            });
-            const updatePayload: Parameters<typeof chrome.bookmarks.update>[1] = { title: node.title };
-            if (node.url) updatePayload.url = node.url;
-            await chrome.bookmarks.update(node.id, updatePayload);
+            const existing = await chrome.bookmarks
+                .get(node.id)
+                .catch(() => [] as chrome.bookmarks.BookmarkTreeNode[]);
+
+            if (existing.length > 0) {
+                await chrome.bookmarks.move(node.id, {
+                    parentId: node.parentId,
+                    index: typeof node.index === 'number' ? node.index : undefined,
+                });
+                const updatePayload: Parameters<typeof chrome.bookmarks.update>[1] = { title: node.title };
+                if (node.url) updatePayload.url = node.url;
+                await chrome.bookmarks.update(node.id, updatePayload);
+            } else {
+                // A removed bookmark keeps no id, so move/update cannot bring it
+                // back; recreate it in place instead.
+                await chrome.bookmarks.create({
+                    parentId: node.parentId,
+                    index: typeof node.index === 'number' ? node.index : undefined,
+                    title: node.title,
+                    ...(node.url ? { url: node.url } : {}),
+                });
+            }
             restored += 1;
         } catch {
-            // Skip nodes that no longer exist or cannot be restored.
+            // Skip nodes whose parent is gone or that cannot be restored.
         }
+    }
+
+    // Only consume the snapshot when it actually brought something back.
+    if (restored > 0) {
+        await popLastOperationSnapshot();
     }
 
     return { restored, label: snapshot.label };
